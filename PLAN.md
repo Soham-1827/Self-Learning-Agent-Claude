@@ -338,7 +338,7 @@ self-learning-agent/
 |---|---|---|
 | M0 | ✅ Repo skeleton, config, CI, MIT license | `pytest` runs green on an empty suite |
 | M1 | ✅ `sla fetch <url>` → cached `SourceDocument` JSON | Works offline on 2nd run; ledger dedupes |
-| M2 | `sla inventory` → installed skills/MCPs/CLIs | Correctly lists the 224 local skills |
+| M2 | ✅ `sla inventory` → installed skills/MCPs/CLIs | Correctly lists the 224 local skills |
 | M3 | `/learn <url>` → note in vault + `proposals.json` | A `tooling` video yields proposals worth approving **and** a `conceptual` video yields ideas worth building |
 | M4 | Gate + `sla apply` | A `medium` proposal installs; a `high` one refuses and prints instructions; a generated skill goes repo → live via copy |
 | M5 | Channel batch: `/learn @GregIsenberg --last 5` | Dedupes against ledger, caps per-run cost |
@@ -379,7 +379,7 @@ Per repo standards (80% minimum, TDD):
 
 - [ ] Exact vault path and folder structure inside `/mnt/d/LearningVault`
 - [x] ~~Do generated skills go to `~/.claude/skills/` or a repo folder that is symlinked?~~ → **D7: copy on apply**, symlink opt-in
-- [ ] Verify Claude Code skill discovery follows symlinks (only blocks the opt-in mode; test at M4)
+- [x] ~~Verify Claude Code skill discovery follows symlinks~~ → **yes**, proven in M2 (§16)
 - [ ] Per-run token/cost cap for batch mode (M5)
 - [ ] Whether `none`-risk auto-apply is opt-in or always-confirm
 
@@ -435,3 +435,47 @@ in speech and never linked is **low confidence by construction** and belongs und
   CI covers 3.10–3.12. Worth moving to 3.11+ before it becomes forced.
 - Raw metadata is ~660KB, almost all format listings. `_fetch_metadata` keeps ~15
   fields, which is what makes fixtures small enough to commit (6KB).
+
+---
+
+## 16. Field notes from M2 (2026-09-07)
+
+Inventory run against the real machine: **223 user skills, 33 plugin skills, 28 MCP
+servers.** Two bugs surfaced only because it was pointed at a real setup rather than
+a fixture.
+
+### `Path.rglob` silently hides symlinked skills
+
+32 of 224 skill directories are symlinks (`brainstorming -> ../../.agents/skills/brainstorming`).
+`Path.rglob` does not descend into symlinked directories, so the first implementation
+found **191 of 223** and reported no error — the worst kind of bug, since a skill you
+own but that inventory cannot see becomes a redundant proposal.
+
+Fixed with `os.walk(followlinks=True)` plus a realpath-visited set, because following
+links makes cycles possible. Both paths are regression-tested.
+
+**This resolves an open question from §14:** Claude Code evidently *does* follow
+symlinks for skill discovery, since those 32 skills load correctly. `install_mode =
+"symlink"` (D7) is therefore viable. Copy remains the default for cross-platform
+portability, not because symlinks are unproven.
+
+### Jaccard was the wrong similarity metric
+
+`similar_skills` initially scored `|A∩B| / |A∪B|`, which punishes a skill for having a
+longer description than the query. Nothing ever crossed the threshold. Changed to
+containment (`|A∩B| / |A|`) with IDF weighting, so rare words carry the signal and
+generic vocabulary does not float unrelated skills up.
+
+**Honest limit:** even weighted, keyword overlap over one-line descriptions is weak. It
+puts `security-scan` at the top for a SkillSpector-style pitch, but also surfaces noise.
+Real semantic matching needs embeddings — a dependency and a model call.
+
+So the contract is deliberate:
+
+| Check | Reliability | Use |
+|---|---|---|
+| `has_skill` / `has_mcp` / `has_cli` | exact | authoritative "you already have this" |
+| `similar_skills` | weak | **shortlist only** — narrows 256 to ~3 for the agent to judge |
+
+Tuning the fuzzy matcher further is polishing the wrong layer; judgment belongs to
+synthesis, which reads the shortlisted descriptions.

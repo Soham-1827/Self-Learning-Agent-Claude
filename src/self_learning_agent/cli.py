@@ -9,6 +9,7 @@ from dataclasses import asdict
 
 from . import __version__, config as config_mod
 from .cache import Cache
+from .inventory import collect as collect_inventory
 from .ledger import Ledger
 from .sources import YouTubeSource
 
@@ -60,6 +61,19 @@ def cmd_fetch(args) -> int:
     return 0
 
 
+def cmd_inventory(args) -> int:
+    inv = collect_inventory()
+    if args.against:
+        print(f"already installed, possibly covering: {args.against!r}\n")
+        for skill, score in inv.similar_skills(args.against, limit=args.limit):
+            print(f"  {score:>5}  {skill.name}  ({skill.origin})")
+            if skill.description:
+                print(f"         {skill.description[:100]}")
+        return 0
+    print(json.dumps(inv.summary(), indent=2))
+    return 0
+
+
 def cmd_status(args) -> int:
     cfg = config_mod.load()
     rows = Ledger(cfg.ledger_path).all()
@@ -84,6 +98,13 @@ def build_parser() -> argparse.ArgumentParser:
     fetch.add_argument("--all", action="store_true", help="include already-processed")
     fetch.add_argument("--json", action="store_true", help="emit the full document")
     fetch.set_defaults(func=cmd_fetch)
+
+    inventory = sub.add_parser("inventory", help="what is already installed here")
+    inventory.add_argument(
+        "--against", help="text to shortlist existing skills against"
+    )
+    inventory.add_argument("--limit", type=int, default=5)
+    inventory.set_defaults(func=cmd_inventory)
 
     status = sub.add_parser("status", help="show config and processing history")
     status.set_defaults(func=cmd_status)
