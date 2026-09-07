@@ -42,6 +42,7 @@ Open source, MIT, installable by anyone as a Claude Code plugin.
 | D4 | Note destination | **New dedicated vault** (`/mnt/d/LearningVault`) | Keeps machine-generated notes out of human notes; clean OSS default; safe to wipe while tuning |
 | D5 | Transcript source | **`yt-dlp`, anonymous** | Channel listings *and* captions with no API key. YouTube Data API stays optional |
 | D6 | Output shape | **Classified: tooling vs. conceptual** | A setup video and an ideas video deserve different notes. See §7.1 |
+| D7 | How generated skills reach Claude Code | **Copy on apply** (symlink opt-in) | Works identically on every OS; symlinks across WSL/Windows/macOS need per-platform setup. See §8 Rule 6 |
 
 ### Accepted improvements (agreed 2026-09-06)
 
@@ -249,6 +250,31 @@ It never reads, writes, echoes, or transmits a value.
 
 Each proposal carries an `undo` field. The `Applied` note section records it.
 
+### Rule 6 — generated skills are reviewable before they are live (D7)
+
+Generated skills are written to `generated-skills/<name>/SKILL.md` **inside this repo**,
+where they are ordinary tracked files. `git diff` shows exactly what the agent authored
+before any of it takes effect, and `git revert` rolls back a skill built on bad advice.
+
+Activation is a separate, explicit step:
+
+```
+generated-skills/<name>/     ──[ sla apply ]──►   ~/.claude/skills/<name>/
+   (git: reviewable)              copy               (live)
+```
+
+**Default is copy, not symlink.** Symlinks across WSL / Windows / macOS need
+per-platform setup and dangle when the repo moves — unacceptable for a tool other
+people install. `install_mode = "symlink"` is available in config for a faster local
+loop, and is documented as the advanced option.
+
+Cost of copying: two files can drift if the live copy is hand-edited. `sla status`
+diffs repo against live and reports drift, so it is visible rather than silent.
+
+*Reviewability is a security control, not a convenience.* Under D1 the agent authors
+instructions that later steer an agent with shell access. A human-readable diff before
+activation is the last checkpoint on that path.
+
 ---
 
 ## 9. `proposals.json` contract
@@ -289,6 +315,7 @@ self-learning-agent/
 ├── .claude-plugin/plugin.json        # installable as a Claude Code plugin
 ├── commands/learn.md                 # /learn <url|@handle|path>
 ├── skills/learn-from-source/SKILL.md # synthesis instructions for the agent
+├── generated-skills/                 # agent-authored skills, in git, pre-activation (D7)
 ├── src/self_learning_agent/
 │   ├── sources/{base,youtube}.py
 │   ├── cache.py       # I2 — raw fetch cache
@@ -297,9 +324,9 @@ self-learning-agent/
 │   ├── vault.py       # note render + write
 │   ├── proposals.py   # schema + validation
 │   ├── gate.py        # risk policy + allowlist
-│   ├── apply.py       # executes approved proposals
+│   ├── apply.py       # executes approved proposals; copies skills live (D7)
 │   ├── config.py      # ~/.self-learning-agent/config.toml
-│   └── cli.py         # sla fetch | inventory | apply | status
+│   └── cli.py         # sla fetch | inventory | apply | status (incl. drift check)
 └── tests/  (+ fixtures/ for offline transcript tests)
 ```
 
@@ -313,7 +340,7 @@ self-learning-agent/
 | M1 | `sla fetch <url>` → cached `SourceDocument` JSON | Works offline on 2nd run; ledger dedupes |
 | M2 | `sla inventory` → installed skills/MCPs/CLIs | Correctly lists the 224 local skills |
 | M3 | `/learn <url>` → note in vault + `proposals.json` | A `tooling` video yields proposals worth approving **and** a `conceptual` video yields ideas worth building |
-| M4 | Gate + `sla apply` | A `medium` proposal installs; a `high` one refuses and prints instructions |
+| M4 | Gate + `sla apply` | A `medium` proposal installs; a `high` one refuses and prints instructions; a generated skill goes repo → live via copy |
 | M5 | Channel batch: `/learn @GregIsenberg --last 5` | Dedupes against ledger, caps per-run cost |
 | M6 | Scheduled polling | Cron/daemon, digest note per run |
 | M7 | Frontend | Paste a link → same Python entrypoint |
@@ -330,6 +357,7 @@ Per repo standards (80% minimum, TDD):
 - **Classification:** fixture set of known `tooling` / `conceptual` videos; a misclassification is a real bug, not a style issue.
 - **Security (highest value):** adversarial fixture transcripts containing injection attempts (`curl | sh`, `rm -rf`, "ignore previous instructions") must classify `high` and never execute. This suite is the one that must never go red.
 - **Integration:** fixture video → full PLAN phase → assert note structure.
+- **Install mode:** copy activates correctly; drift between repo and live copy is detected and reported, never silently overwritten.
 - **E2E:** one live network test, marked, off by default in CI.
 
 ---
@@ -350,6 +378,7 @@ Per repo standards (80% minimum, TDD):
 ## 14. Open questions
 
 - [ ] Exact vault path and folder structure inside `/mnt/d/LearningVault`
-- [ ] Do generated skills go to `~/.claude/skills/` or a repo folder that is symlinked?
+- [x] ~~Do generated skills go to `~/.claude/skills/` or a repo folder that is symlinked?~~ → **D7: copy on apply**, symlink opt-in
+- [ ] Verify Claude Code skill discovery follows symlinks (only blocks the opt-in mode; test at M4)
 - [ ] Per-run token/cost cap for batch mode (M5)
 - [ ] Whether `none`-risk auto-apply is opt-in or always-confirm
