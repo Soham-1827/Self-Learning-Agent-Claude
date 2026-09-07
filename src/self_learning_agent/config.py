@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 import subprocess
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -31,6 +32,11 @@ class Config:
     def config_path(self) -> Path:
         return self.home / "config.toml"
 
+    @property
+    def json_config_path(self) -> Path:
+        """Checked first: needs no TOML parser, so it cannot be silently ignored."""
+        return self.home / "config.json"
+
     def resolved(self) -> "Config":
         """Fill in anything that must be discovered on this machine."""
         return replace(self, ytdlp_cmd=self.ytdlp_cmd or discover_ytdlp())
@@ -55,20 +61,43 @@ def discover_ytdlp() -> tuple[str, ...]:
     )
 
 
-def load(home: Path | None = None) -> Config:
-    """Load config.toml if present; otherwise use defaults."""
-    cfg = Config(home=home or DEFAULT_HOME)
-    if not cfg.config_path.exists():
-        return cfg
+def _read_toml(path: Path) -> dict | None:
     try:
         import tomllib  # Python 3.11+
-    except ModuleNotFoundError:  # pragma: no cover - depends on interpreter
+    except ModuleNotFoundError:  # pragma: no cover - interpreter dependent
         try:
             import tomli as tomllib  # type: ignore[no-redef]
         except ModuleNotFoundError:
-            return cfg  # config present but unreadable here; defaults still work
+            return None  # signals "present but unreadable", never "empty"
+    return tomllib.loads(path.read_text(encoding="utf-8"))
 
-    data = tomllib.loads(cfg.config_path.read_text(encoding="utf-8"))
+
+def load(home: Path | None = None) -> Config:
+    """Load config.json, else config.toml, else defaults.
+
+    JSON is checked first because it parses with the standard library on every
+    supported version. A TOML file that cannot be parsed raises rather than
+    falling back to defaults — silently writing notes into the wrong vault is
+    worse than failing.
+    """
+    import json
+
+    cfg = Config(home=home or DEFAULT_HOME)
+    data: dict = {}
+    if cfg.json_config_path.exists():
+        data = json.loads(cfg.json_config_path.read_text(encoding="utf-8"))
+    elif cfg.config_path.exists():
+        parsed = _read_toml(cfg.config_path)
+        if parsed is None:
+            raise RuntimeError(
+                f"{cfg.config_path} exists but no TOML parser is available on "
+                f"Python {sys.version_info.major}.{sys.version_info.minor}. "
+                f"Install tomli, or use {cfg.json_config_path.name} instead."
+            )
+        data = parsed
+    if not data:
+        return cfg
+
     return replace(
         cfg,
         vault_path=Path(data.get("vault_path", cfg.vault_path)).expanduser(),

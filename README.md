@@ -2,10 +2,10 @@
 
 **Point your coding agent at a video. Get a note you'll keep, and a setup you approved.**
 
-> **Status: early build.** M0–M2 are done and tested — `sla fetch` and `sla inventory`
-> work against real videos and real setups today. Synthesis (M3) and the approval gate
-> (M4) are next. Architecture is in [PLAN.md](PLAN.md); to pick the work up cold, read
-> [HANDOVER.md](HANDOVER.md).
+> **Status: working, minus the gate.** M0–M3 are done and tested: `/learn <url>`
+> produces a real vault note with validated proposals today. The approval gate and
+> `sla apply` (M4) are the last piece of v1. Architecture is in [PLAN.md](PLAN.md); to
+> pick the work up cold, read [HANDOVER.md](HANDOVER.md).
 
 ---
 
@@ -122,7 +122,7 @@ security model enforceable.
 | M0 | Repo skeleton, CI, license | ✅ |
 | M1 | Fetch + cache + ledger | ✅ |
 | M2 | Inventory of installed skills/MCPs | ✅ |
-| M3 | `/learn` → vault note + proposals | **v1** |
+| M3 | `/learn` → vault note + proposals | ✅ |
 | M4 | Approval gate + apply | **v1** |
 | M5 | Channel batch processing | |
 | M6 | Scheduled polling | |

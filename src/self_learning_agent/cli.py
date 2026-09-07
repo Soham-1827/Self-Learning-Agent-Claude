@@ -5,12 +5,15 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
 from dataclasses import asdict
 
 from . import __version__, config as config_mod
 from .cache import Cache
 from .inventory import collect as collect_inventory
 from .ledger import Ledger
+from .synthesis import build_brief, parse_result
+from .vault import render, write_note
 from .sources import YouTubeSource
 
 
@@ -61,6 +64,59 @@ def cmd_fetch(args) -> int:
     return 0
 
 
+def _load_document(cfg, ref: str, refresh: bool = False):
+    source = YouTubeSource(cfg, Cache(cfg.cache_dir))
+    source_id = source.resolve(ref)[0]
+    return source.fetch(source_id, refresh=refresh)
+
+
+def cmd_brief(args) -> int:
+    """Emit everything the agent needs to synthesise. Data only, no instructions."""
+    cfg = config_mod.load()
+    doc = _load_document(cfg, args.ref)
+    brief = build_brief(doc, collect_inventory())
+    text = json.dumps(brief, ensure_ascii=False, indent=2)
+    if args.out:
+        Path(args.out).write_text(text, encoding="utf-8")
+        print(f"brief written: {args.out}  ({len(text):,} bytes)", file=sys.stderr)
+    else:
+        print(text)
+    return 0
+
+
+def cmd_note(args) -> int:
+    """Validate an agent's synthesis JSON and render it into the vault."""
+    cfg = config_mod.load()
+    raw = json.loads(Path(args.synthesis).read_text(encoding="utf-8"))
+    result = parse_result(raw)
+    doc = _load_document(cfg, args.ref)
+    if result.source_id != doc.source_id:
+        raise ValueError(
+            f"synthesis is for {result.source_id!r} but ref resolved to {doc.source_id!r}"
+        )
+
+    if args.dry_run:
+        print(render(doc, result))
+        return 0
+
+    vault_dir = cfg.vault_path / cfg.vault_subdir
+    path = write_note(doc, result, vault_dir)
+    Ledger(cfg.ledger_path).record(
+        doc.source_type,
+        doc.source_id,
+        title=doc.title,
+        url=doc.url,
+        note_path=str(path),
+        status="pending-review" if result.proposals else "no-actions",
+    )
+    print(f"note written: {path}")
+    if result.rejected:
+        print(f"rejected {len(result.rejected)} invalid proposal(s):", file=sys.stderr)
+        for item in result.rejected:
+            print(f"  - {item}", file=sys.stderr)
+    return 0
+
+
 def cmd_inventory(args) -> int:
     inv = collect_inventory()
     if args.against:
@@ -98,6 +154,17 @@ def build_parser() -> argparse.ArgumentParser:
     fetch.add_argument("--all", action="store_true", help="include already-processed")
     fetch.add_argument("--json", action="store_true", help="emit the full document")
     fetch.set_defaults(func=cmd_fetch)
+
+    brief = sub.add_parser("brief", help="assemble the synthesis input packet")
+    brief.add_argument("ref", help="video URL, video id, or @channel handle")
+    brief.add_argument("--out", help="write to a file instead of stdout")
+    brief.set_defaults(func=cmd_brief)
+
+    note = sub.add_parser("note", help="render validated synthesis into the vault")
+    note.add_argument("ref", help="the same reference the brief was built from")
+    note.add_argument("--synthesis", required=True, help="path to the agent's JSON")
+    note.add_argument("--dry-run", action="store_true", help="print instead of writing")
+    note.set_defaults(func=cmd_note)
 
     inventory = sub.add_parser("inventory", help="what is already installed here")
     inventory.add_argument(

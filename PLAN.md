@@ -339,7 +339,7 @@ self-learning-agent/
 | M0 | ✅ Repo skeleton, config, CI, MIT license | `pytest` runs green on an empty suite |
 | M1 | ✅ `sla fetch <url>` → cached `SourceDocument` JSON | Works offline on 2nd run; ledger dedupes |
 | M2 | ✅ `sla inventory` → installed skills/MCPs/CLIs | Correctly lists the 224 local skills |
-| M3 | `/learn <url>` → note in vault + `proposals.json` | A `tooling` video yields proposals worth approving **and** a `conceptual` video yields ideas worth building |
+| M3 | ✅ `/learn <url>` → note in vault + `proposals.json` | A `tooling` video yields proposals worth approving **and** a `conceptual` video yields ideas worth building |
 | M4 | Gate + `sla apply` | A `medium` proposal installs; a `high` one refuses and prints instructions; a generated skill goes repo → live via copy |
 | M5 | Channel batch: `/learn @GregIsenberg --last 5` | Dedupes against ledger, caps per-run cost |
 | M6 | Scheduled polling | Cron/daemon, digest note per run |
@@ -479,3 +479,59 @@ So the contract is deliberate:
 
 Tuning the fuzzy matcher further is polishing the wrong layer; judgment belongs to
 synthesis, which reads the shortlisted descriptions.
+
+---
+
+## 17. Field notes from M3 (2026-09-07)
+
+Synthesis shipped and run end to end on the fixture video. The note it produced is
+one worth keeping, which was M3's stated done-condition.
+
+### The seam that makes Rule 1 structural
+
+`sla brief` emits data; the agent returns JSON; `sla note` validates and renders.
+The agent has no file-writing and no command-producing capability in this path at
+all — so §8 Rule 1 is enforced by the shape of the interface rather than by the
+agent's good behaviour.
+
+Two properties fell out of that:
+
+- **Claimed risk is discarded.** `derive_risk()` recomputes the tier from the kind
+  and action. A proposal asserting `"risk": "none"` on an npm install still comes
+  out `medium`. Regression-tested.
+- **Invalid proposals are dropped and surfaced**, never repaired. Silently fixing a
+  malformed proposal would mean guessing at intent on untrusted input.
+
+### A real vulnerability the adversarial suite caught
+
+`../../etc/passwd` passed package-name validation. Every character in it is legal in
+a genuine package name (`lodash.merge`, `@scope/name`), so the charset regex accepted
+it — and `npm install -g ../../etc/passwd` installs from a local path.
+
+Fixed with a **shape** check rather than a charset one: reject `..`, reject leading
+`/ . ~`, and allow at most one `/` and only for an `@scope`. Both the attacks and the
+legitimate names are regression-tested.
+
+This is the argument for §12's adversarial suite in miniature: the bug was invisible
+to inspection and obvious to a test.
+
+### Restrictive by design, and it shows
+
+Real-world install instructions frequently fall outside the allowlist. In the fixture
+video, two of five repos did:
+
+| Repo | Documented install | Tier |
+|---|---|---|
+| NVIDIA/SkillSpector | `uv tool install git+https://...` | `high` — a git URL is clone-and-execute, not a registry install |
+| petergyang/no-ai-slop | `npx skills add <github url>` | `high` — `npx` is not an allowlisted manager |
+
+Both render as manual instructions with the exact command printed. That is the
+intended behaviour, not a gap: automating a git-URL install would defeat the
+allowlist. Worth revisiting only with evidence that manual-tier proposals are being
+ignored in practice.
+
+### Inventory earned its place immediately
+
+Synthesis dropped the No AI Slop proposal outright: `brand-voice` is already
+installed and covers the same ground. That is one of five recommendations removed by
+M2 on the very first real run.
