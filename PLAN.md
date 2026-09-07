@@ -336,8 +336,8 @@ self-learning-agent/
 
 | M | Deliverable | Done when |
 |---|---|---|
-| M0 | Repo skeleton, config, CI, MIT license | `pytest` runs green on an empty suite |
-| M1 | `sla fetch <url>` → cached `SourceDocument` JSON | Works offline on 2nd run; ledger dedupes |
+| M0 | ✅ Repo skeleton, config, CI, MIT license | `pytest` runs green on an empty suite |
+| M1 | ✅ `sla fetch <url>` → cached `SourceDocument` JSON | Works offline on 2nd run; ledger dedupes |
 | M2 | `sla inventory` → installed skills/MCPs/CLIs | Correctly lists the 224 local skills |
 | M3 | `/learn <url>` → note in vault + `proposals.json` | A `tooling` video yields proposals worth approving **and** a `conceptual` video yields ideas worth building |
 | M4 | Gate + `sla apply` | A `medium` proposal installs; a `high` one refuses and prints instructions; a generated skill goes repo → live via copy |
@@ -382,3 +382,56 @@ Per repo standards (80% minimum, TDD):
 - [ ] Verify Claude Code skill discovery follows symlinks (only blocks the opt-in mode; test at M4)
 - [ ] Per-run token/cost cap for batch mode (M5)
 - [ ] Whether `none`-risk auto-apply is opt-in or always-confirm
+
+---
+
+## 15. Field notes from M1 (2026-09-06)
+
+First real fetch: `9_SZFIW7tus` — *"5 GitHub Repos: Kill AI Slop, Go Viral, Make Money"*,
+Greg Isenberg, 24.7 min. Kept as the primary test fixture.
+
+### What the data actually looks like
+
+| Signal | Result |
+|---|---|
+| Manual captions | none |
+| Auto captions | present, **4,150 words of clean punctuated prose** |
+| Chapters | 7, each naming a repo |
+| Description | 4,761 chars — all 5 repo URLs, timestamps, *and* the creator's own prose summaries |
+
+### The I1 hypothesis was right, for a sharper reason than stated
+
+The original worry was that auto-captions would be broadly unusable. They are not —
+the prose is good. **Proper nouns are what break:**
+
+| Captioned as | Actually is |
+|---|---|
+| "Skill Specter" | `NVIDIA/SkillSpector` |
+| "Cloud Code" | Claude Code |
+
+Both are exactly the tokens needed to find a repo. Searching GitHub for
+"Skill Specter" returns nothing. The description holds
+`https://github.com/NVIDIA/SkillSpector` verbatim.
+
+**Revised rule, now load-bearing:**
+
+> The **description is authoritative for entity names.**
+> The **transcript is authoritative for reasoning about them** — why a repo matters,
+> when to use it, what the caveat is. Neither substitutes for the other.
+
+### Consequence for M3 (synthesis)
+
+Synthesis must perform **entity reconciliation**, not naive extraction: take candidate
+names from the description's links, then match transcript discussion to them by
+position (chapters give the alignment) rather than by string match. A tool named only
+in speech and never linked is **low confidence by construction** and belongs under
+`## Gaps & uncertainty`, never in a proposal.
+
+`Link.repo_slug` preserves original URL casing for this reason, and it is regression-tested.
+
+### Environment notes
+
+- `yt-dlp` warns that **Python 3.10 support is deprecated**. Dev machine is 3.10.12;
+  CI covers 3.10–3.12. Worth moving to 3.11+ before it becomes forced.
+- Raw metadata is ~660KB, almost all format listings. `_fetch_metadata` keeps ~15
+  fields, which is what makes fixtures small enough to commit (6KB).

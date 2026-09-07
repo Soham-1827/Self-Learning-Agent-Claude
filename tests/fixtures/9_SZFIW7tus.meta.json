@@ -1,0 +1,56 @@
+{
+  "id": "9_SZFIW7tus",
+  "title": "5 GitHub Repos: Kill AI Slop, Go Viral, Make Money",
+  "description": "On this solo episode, I review five free, open source GitHub repos that help you build products, make money, or save time: Peter Yang's No AI Slop Skill, the CRM by TryComp AI, Video Use by browser use, SkillSpector by NVIDIA, and Phone Harness. For each repo I explain what it does, why it matters, how to install it, and the first small workflow to try. I close with a simple three-step method: install the repo, make one small workflow work, then decide to productize it or keep it as your own leverage.\n\nTimestamps\n\n00:00 – Intro\n01:44 – Repo 1: No AI Slop\n05:20 – Repo 2: Agentic-first CRM\n10:52 – Repo 3: Video Use\n15:15 – Repo 4: SkillSpector\n18:49 – Repo 5: Phone Harness\n22:25 – Closing Thoughts\n\nLinks to repos:\npetergyang/no-ai-slop — https://github.com/petergyang/no-ai-slop\ntrycompai/crm — https://github.com/trycompai/crm\nbrowser-use/video-use — https://github.com/browser-use/video-use\nNVIDIA SkillSpector — https://github.com/NVIDIA/SkillSpector\nphone-harness — https://github.com/ShawnPana/phone-harness\n\nNumbered Section Summaries\n\n1. Why I Watch GitHub Now\n    \nI treat GitHub as an early view of the agentic era. Many SaaS companies, agencies, workflows, and startup ideas start there first. I picked the repos from the ones that got attention over the last 30 days, and I explain each one in plain English.\n    \n2. No AI Slop Skill: Human Ideas First, AI Cleanup Second\n    \nPeter Yang's skill strips the patterns that make writing smell like AI, and it keeps your actual voice. I care about this because founders write constantly: tweets, landing pages, cold emails, launch posts, onboarding copy, and investor updates. Readers who sense AI copy trust you less, so this repo makes your communication more believable.\n    \n3. The CRM Built For Agents\n    \nThe CRM by TryComp AI treats your CRM as a workspace for an agent instead of a filing cabinet for you. The agent researches people, enriches company data, schedules follow-ups, and keeps the notes current. Most businesses lose money because opportunities scatter across old emails, so a system that maintains the relationship graph for you is real revenue.\n    \n4. One Small Pipeline To Start With\n    \nI would start with a single pipeline of warm leads that deserve a follow-up: everyone who replied, booked a call, asked about pricing, or promised to circle back. The install needs bun and docker, a git clone, the env example, and a few bun commands. It runs locally on localhost 3000 with the API on localhost 3001, and it uses Google or Microsoft OAuth for sign-in, email, and calendar.\n    \n5. Video Use: Turn Your Edit Style Into A System\n    \nVideo Use by browser use lets coding agents edit your raw footage. The agent removes filler words, cuts dead space, adds subtitles, color grades, builds overlays, renders the video, and then checks the output. Your edit style usually lives in muscle memory, and this repo makes it explicit and repeatable, which shrinks the distance between raw material and published content.\n    \n6. SkillSpector: Scan The Tool Before You Trust It\n    \nNVIDIA's SkillSpector scans agent skills for prompt injection, data exfiltration, supply chain risk, hidden instructions, and MCP related risks. A skill carries instructions, scripts, dependencies, and tool access, so it changes how your agent behaves. As builders assemble their own AI work environments, security becomes a normal founder problem, and I like that NVIDIA gives this category credibility.\n    \n7. Phone Harness: Agents That Operate A Real Phone\n    \nPhone Harness connects an agent like Codex or Claude Code to a real iPhone through Mac iPhone mirroring, or to an Android through ADB. The agent sees the screen, taps, types, scrolls, opens apps, and verifies the result, so mobile QA, API-free automations, and repetitive creator workflows become possible. The project is early, and face ID and camera flows stay tricky, but the direction is obvious.\n    \n8. Install, Test, Then Decide To Productize\n    \nMy method has three steps: install the repo, build one small workflow that adds value, then decide to productize it or keep it for your own speed. Even people with light technical skills learn a lot from the install itself. I recommend a monthly habit of finding and installing new repos, because it connects the dots in this era.\n\nThe #1 tool to find startup ideas/trends - https://www.ideabrowser.com\n\nLCA helps Fortune 500s and fast-growing startups build their future - from Warner Music to Fortnite to Dropbox. We turn 'what if' into reality with AI, apps, and next-gen products https://latecheckout.agency/\n\nFIND ME ON SOCIAL\n\nX/Twitter: https://twitter.com/gregisenberg\n\nInstagram: https://instagram.com/gregisenberg/\n\nLinkedIn: https://www.linkedin.com/in/gisenberg/",
+  "channel": "Greg Isenberg",
+  "uploader": "Greg Isenberg",
+  "uploader_id": "@GregIsenberg",
+  "channel_id": "UCPjNBjflYl0-HQtUvOx0Ibw",
+  "upload_date": "20260902",
+  "duration": 1483,
+  "view_count": 149749,
+  "webpage_url": "https://www.youtube.com/watch?v=9_SZFIW7tus",
+  "chapters": [
+    {
+      "start_time": 0,
+      "title": "Intro",
+      "end_time": 104
+    },
+    {
+      "start_time": 104,
+      "title": "Repo 1: No AI Slop",
+      "end_time": 320
+    },
+    {
+      "start_time": 320,
+      "title": "Repo 2: Agentic-first CRM",
+      "end_time": 652
+    },
+    {
+      "start_time": 652,
+      "title": "Repo 3: Video Use",
+      "end_time": 915
+    },
+    {
+      "start_time": 915,
+      "title": "Repo 4: SkillSpector",
+      "end_time": 1129
+    },
+    {
+      "start_time": 1129,
+      "title": "Repo 5: Phone Harness",
+      "end_time": 1345
+    },
+    {
+      "start_time": 1345,
+      "title": "Closing Thoughts",
+      "end_time": 1483
+    }
+  ],
+  "tags": [],
+  "categories": [
+    "Science & Technology"
+  ],
+  "_has_manual_en": false,
+  "_has_auto_en": true
+}

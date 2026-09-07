@@ -2,9 +2,9 @@
 
 **Point your coding agent at a video. Get a note you'll keep, and a setup you approved.**
 
-> **Status: design phase.** The architecture is settled and written up in
-> [PLAN.md](PLAN.md). No working code yet — v1 is milestones M0–M4. Watch the repo
-> if you want to be there when it lands.
+> **Status: early build.** M0 (scaffolding) and M1 (fetch, cache, dedupe) are done and
+> tested — `sla fetch` works against real videos today. Synthesis (M3) and the approval
+> gate (M4) are next. Architecture is written up in [PLAN.md](PLAN.md).
 
 ---
 
@@ -118,8 +118,8 @@ security model enforceable.
 
 | | Milestone | |
 |---|---|---|
-| M0 | Repo skeleton, CI, license | |
-| M1 | Fetch + cache + ledger | **v1** |
+| M0 | Repo skeleton, CI, license | ✅ |
+| M1 | Fetch + cache + ledger | ✅ |
 | M2 | Inventory of installed skills/MCPs | **v1** |
 | M3 | `/learn` → vault note + proposals | **v1** |
 | M4 | Approval gate + apply | **v1** |
