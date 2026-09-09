@@ -60,6 +60,39 @@ Once `pip` exists: `pip install -e ".[dev]"` then plain `sla ...` and `pytest`.
    (`credential.helper` in global git config). `gh` is not installed.
 6. Project lives on `/mnt/d` (v9fs); `~/.claude` is on ext4. This matters for symlinks.
 
+## Running it on Windows vs WSL
+
+Both work. They have complementary gaps, and this is worth knowing before debugging
+a "broken" install:
+
+| | Windows (Git Bash / PowerShell) | WSL |
+|---|---|---|
+| `pip` | present | **missing** (needs `sudo apt install python3-pip`) |
+| Python | 3.12 | 3.10 — deprecated by yt-dlp, below SkillSpector's 3.12 floor |
+| The 256 installed skills | **not visible** (1 skill in the Windows `~/.claude`) | all of them |
+| Claude Code | — | runs here |
+
+State is **not shared**: config, ledger, cache and stored proposals live under each
+platform's own home, so a note written in WSL cannot be applied from Windows. Point
+`SLA_HOME` at a shared path if you need one environment to see the other's work.
+
+Windows Python cannot read WSL's `~/.claude` through the `\\wsl$` share when invoked
+from inside WSL, so `CLAUDE_CONFIG_DIR` is not a workaround for the inventory gap.
+
+**Recommendation: WSL, once `pip` is installed there.** It is where the skills and
+Claude Code live, and inventory is the step that makes notes useful rather than noisy.
+
+```bash
+# Git Bash / VS Code terminal on Windows
+PYTHONPATH=src python -m self_learning_agent.cli fetch "<url>"
+
+# PowerShell
+$env:PYTHONPATH="src"; python -m self_learning_agent.cli fetch "<url>"
+
+# WSL
+PYTHONPATH=src python3 -m self_learning_agent.cli fetch "<url>"
+```
+
 ## The two findings that shaped the design
 
 ### 1. Descriptions beat transcripts for names (PLAN §15)

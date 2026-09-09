@@ -48,14 +48,17 @@ def discover_ytdlp() -> tuple[str, ...]:
         return tuple(override.split())
     if binary := shutil.which("yt-dlp"):
         return (binary,)
+    # Probe the interpreter that is actually running, not a hardcoded name.
+    # "python3" does not exist on Windows, so hardcoding it hides a yt_dlp that
+    # is installed for the very interpreter asking the question.
     probe = subprocess.run(
-        ["python3", "-c", "import yt_dlp"], capture_output=True, check=False
+        [sys.executable, "-c", "import yt_dlp"], capture_output=True, check=False
     )
     if probe.returncode == 0:
-        return ("python3", "-m", "yt_dlp")
+        return (sys.executable, "-m", "yt_dlp")
     zipapp = Path.home() / ".local" / "bin" / "yt-dlp.pyz"
     if zipapp.exists():
-        return ("python3", str(zipapp))
+        return (sys.executable, str(zipapp))
     raise RuntimeError(
         "yt-dlp not found. Install it with `pip install yt-dlp`, or set SLA_YTDLP."
     )

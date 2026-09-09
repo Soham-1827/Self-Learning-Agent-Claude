@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+import os
+
 from .config import Config
 from .gate import Decision
 from .inventory import CLAUDE_HOME
@@ -30,6 +32,13 @@ class AppliedRecord:
         mark = "applied" if self.ok else "FAILED"
         undo = f" · undo: `{self.undo}`" if self.undo else ""
         return f"- **{mark}** `{self.proposal_id}` {self.title} — {self.detail}{undo}"
+
+
+def _remove_cmd(path: Path) -> str:
+    """A delete command the user can actually paste into their own shell."""
+    if os.name == "nt":
+        return f'Remove-Item -Recurse -Force "{path}"'
+    return f"rm -rf {path}"
 
 
 def staging_dir(config: Config) -> Path:
@@ -83,10 +92,10 @@ def _activate_skill(proposal: Proposal, config: Config, repo_root: Path) -> Appl
         target.parent.mkdir(parents=True, exist_ok=True)
         target.symlink_to(source)
         return _record(proposal, True, f"symlinked {target} -> {source}",
-                       undo=f"rm {target}")
+                       undo=_remove_cmd(target))
 
     shutil.copytree(source, target)
-    return _record(proposal, True, f"copied to {target}", undo=f"rm -rf {target}")
+    return _record(proposal, True, f"copied to {target}", undo=_remove_cmd(target))
 
 
 def _clone_repo(proposal: Proposal, config: Config) -> AppliedRecord:
@@ -99,7 +108,7 @@ def _clone_repo(proposal: Proposal, config: Config) -> AppliedRecord:
     ok, detail = _run([*command, str(dest)])
     return _record(
         proposal, ok, f"cloned to {dest}" if ok else detail,
-        undo=f"rm -rf {dest}" if ok else None,
+        undo=_remove_cmd(dest) if ok else None,
     )
 
 
@@ -129,8 +138,11 @@ def _add_mcp_server(proposal: Proposal) -> AppliedRecord:
         "args": ["-y", proposal.action["package"]],
     }
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    restore = (
+        f'Copy-Item "{backup}" "{path}"' if os.name == "nt" else f"cp {backup} {path}"
+    )
     return _record(proposal, True, f"added MCP server {name!r} (backup: {backup.name})",
-                   undo=f"cp {backup} {path}")
+                   undo=restore)
 
 
 def _record(p: Proposal, ok: bool, detail: str, undo: str | None = None) -> AppliedRecord:
