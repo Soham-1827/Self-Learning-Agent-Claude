@@ -77,6 +77,9 @@ apply anything.** Applying is `sla apply` (M4) and requires their approval.
   If you feel pressure to produce actions, that pressure is the bug.
 - **Fill `gaps` honestly.** Videos demo things on screen while the audio says
   "just paste this in here". Say what you could not see.
+- **Never infer a creator's pronouns from their name or voice.** Use they/them, or
+  name them ("the video argues...", "Greg Isenberg attributes..."). These notes are
+  about real people, and a channel handle is not a statement of pronouns.
 - **A project idea needs all five parts** (§7.2): what it is, why it is
   *non-obvious*, the stack, a literal first command, and an honest size. Drop
   ideas that cannot carry all five rather than padding them out.
