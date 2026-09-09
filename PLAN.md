@@ -340,7 +340,7 @@ self-learning-agent/
 | M1 | ✅ `sla fetch <url>` → cached `SourceDocument` JSON | Works offline on 2nd run; ledger dedupes |
 | M2 | ✅ `sla inventory` → installed skills/MCPs/CLIs | Correctly lists the 224 local skills |
 | M3 | ✅ `/learn <url>` → note in vault + `proposals.json` | A `tooling` video yields proposals worth approving **and** a `conceptual` video yields ideas worth building |
-| M4 | Gate + `sla apply` | A `medium` proposal installs; a `high` one refuses and prints instructions; a generated skill goes repo → live via copy |
+| M4 | ✅ Gate + `sla apply` | A `medium` proposal installs; a `high` one refuses and prints instructions; a generated skill goes repo → live via copy |
 | M5 | Channel batch: `/learn @GregIsenberg --last 5` | Dedupes against ledger, caps per-run cost |
 | M6 | Scheduled polling | Cron/daemon, digest note per run |
 | M7 | Frontend | Paste a link → same Python entrypoint |
@@ -535,3 +535,67 @@ ignored in practice.
 Synthesis dropped the No AI Slop proposal outright: `brand-voice` is already
 installed and covers the same ground. That is one of five recommendations removed by
 M2 on the very first real run.
+
+---
+
+## 18. Field notes from M4 (2026-09-08)
+
+The approval gate ships, with SkillSpector wired in as a pre-activation scan. v1 is
+complete.
+
+### Two independent inputs, either of which can refuse
+
+| Input | Derived from | Source |
+|---|---|---|
+| risk tier | what the action *does* | `proposals.derive_risk` |
+| scan verdict | what the content *contains* | SkillSpector |
+
+Neither can grant permission. Only the user does — `summarise()` reports
+`auto_allowed: 0` by construction, and a test asserts nothing is ever auto-applied.
+
+### The design error M4 exposed: scanning gates activation, not download
+
+The first version blocked any proposal whose scan said `DO_NOT_INSTALL`. Run against
+the fixture video, it blocked `browser-use/video-use` at **100/100 CRITICAL, 57
+findings** — and the findings did not mean what the score implied:
+
+| Finding | Reality |
+|---|---|
+| `HIGH PE3` at `.gitignore:2` | a `.gitignore` listing credential filenames |
+| `MEDIUM AST4` × 17 | a video tool shelling out to ffmpeg |
+| `HIGH AE1` | "artifact not completely inspected" — a scan limit, not a defect |
+
+SkillSpector is built to scan **skills**. Pointed at a full application repo it scores
+CRITICAL off false positives. A gate that blocks on that gets switched off, and a
+disabled gate protects nothing.
+
+The correction is a real distinction, not a threshold tweak:
+
+> A scan may **block** only where applying the proposal puts content in front of an
+> agent. Activating a skill does that. Cloning into staging does not — nothing
+> executes, and staging exists so the thing can be read.
+
+Blocking the clone would have prevented the review the clone is for. `SCAN_CAN_BLOCK`
+is therefore `{"skill"}`; for a clone the verdict is loud but advisory.
+
+### Observed SkillSpector behaviour worth recording
+
+- **Static-only scans never return `SAFE`.** v2.11.1 returns `CAUTION` at score 0 with
+  zero findings; the documented `LOW → SAFE` mapping applies only once semantic
+  analysis has run. `CAUTION` is therefore the ordinary outcome, not an alarm.
+- **`llm_available` does not mean the LLM ran.** With `--no-llm`, `llm_requested` is
+  false while `llm_available` stays true. `llm_ran` requires both; `degraded` means
+  semantic analysis was asked for and did not happen, and a low score then means "the
+  static checks found nothing", never "this is safe".
+- **Symlinked input is refused outright.** 32 skills here are symlinks, so `_resolve()`
+  follows them before scanning.
+- **MCP servers and registry packages cannot be scanned at all** — SkillSpector takes
+  directories, files, git URLs and zips. Blocking them would make the feature unusable;
+  they are confirmed with the gap stated in the reasons.
+
+### Fail-closed points
+
+- A missing `recommendation` parses as `DO_NOT_INSTALL`, never as safe.
+- A scan that errors blocks; a scanner that is absent blocks anything scannable.
+- Proposals are **re-validated when loaded from disk**, not trusted because they were
+  written by an earlier run.

@@ -25,10 +25,10 @@ improvements I1–I4, the security model, and field notes from each milestone.
 | M1 | `sla fetch` — resolve, fetch, cache, dedupe | ✅ done |
 | M2 | `sla inventory` — installed skills / MCP / CLIs | ✅ done |
 | M3 | `/learn` — synthesis into a vault note + `proposals.json` | ✅ done |
-| M4 | Approval gate + `sla apply` | ⬅ **next** |
+| M4 | Approval gate + `sla apply` | ✅ done |
 | M5–M7 | Channel batch, scheduling, frontend | not started |
 
-**v1 = M0–M4.** 100 tests passing.
+**v1 = M0–M4, complete.** 124 tests passing.
 
 ## How to run it
 
@@ -37,6 +37,7 @@ cd /mnt/d/Self-Learning-Agent
 PYTHONPATH=src python3 -m self_learning_agent.cli fetch "https://www.youtube.com/watch?v=9_SZFIW7tus"
 PYTHONPATH=src python3 -m self_learning_agent.cli inventory
 PYTHONPATH=src python3 -m self_learning_agent.cli inventory --against "audits skills for prompt injection"
+PYTHONPATH=src python3 -m self_learning_agent.cli apply "<same-url>" --dry-run
 PYTHONPATH=src python3 -m self_learning_agent.cli status
 ```
 
@@ -82,7 +83,7 @@ Side effect: this **proves Claude Code follows symlinks** for skill discovery, w
 resolved an open question. Copy is still the default install mode (D7) for
 cross-platform reasons, but `install_mode = "symlink"` is now known to work.
 
-## What to build next: M4
+## What to build next: M5 (channel batch)
 
 Turn a `SourceDocument` + `Inventory` into a vault note and `proposals.json`.
 

@@ -12,8 +12,12 @@ from . import __version__, config as config_mod
 from .cache import Cache
 from .inventory import collect as collect_inventory
 from .ledger import Ledger
+from .apply import append_to_note, apply_decision, scan_target, stage_skill
+from .gate import BLOCK, CONFIRM, decide, requires_scan, summarise
+from .proposals import parse_all
 from .synthesis import build_brief, parse_result
 from .vault import render, write_note
+from . import scanner as scanner_mod
 from .sources import YouTubeSource
 
 
@@ -101,6 +105,22 @@ def cmd_note(args) -> int:
 
     vault_dir = cfg.vault_path / cfg.vault_subdir
     path = write_note(doc, result, vault_dir)
+
+    # Keep the validated proposals so `sla apply` has something to act on.
+    store = cfg.home / "proposals"
+    store.mkdir(parents=True, exist_ok=True)
+    (store / f"{doc.source_id}.json").write_text(
+        json.dumps(
+            {
+                "source_id": doc.source_id,
+                "note_path": str(path),
+                "proposals": raw.get("proposals") or [],
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     Ledger(cfg.ledger_path).record(
         doc.source_type,
         doc.source_id,
@@ -114,6 +134,106 @@ def cmd_note(args) -> int:
         print(f"rejected {len(result.rejected)} invalid proposal(s):", file=sys.stderr)
         for item in result.rejected:
             print(f"  - {item}", file=sys.stderr)
+    return 0
+
+
+
+def _describe(decision) -> None:
+    p = decision.proposal
+    marker = {"block": "BLOCKED ", "confirm": "confirm ", "allow": "allow   "}[decision.action]
+    print(f"\n{marker} [{p.risk:^6}] {p.id}  {p.title}")
+    if p.rationale:
+        print(f"          {p.rationale[:160]}")
+    if command := decision.command:
+        print(f"          would run: {' '.join(command)}")
+    if decision.scan is not None:
+        v = decision.scan
+        print(
+            f"          scan: {v.recommendation} {v.score}/100 "
+            f"({v.severity}) · {v.scan_mode} · {len(v.issues)} finding(s)"
+        )
+    for reason in decision.reasons:
+        print(f"          - {reason}")
+
+
+def cmd_apply(args) -> int:
+    cfg = config_mod.load()
+    repo_root = Path(__file__).resolve().parents[2]
+
+    source = YouTubeSource(cfg, Cache(cfg.cache_dir))
+    source_id = source.resolve(args.ref)[0]
+    store = cfg.home / "proposals" / f"{source_id}.json"
+    if not store.exists():
+        print(f"error: no proposals for {source_id}. Run `sla note` first.", file=sys.stderr)
+        return 1
+
+    saved = json.loads(store.read_text(encoding="utf-8"))
+    # Re-validate rather than trusting what was written to disk.
+    proposals, rejected = parse_all(saved.get("proposals"))
+    for item in rejected:
+        print(f"rejected: {item}", file=sys.stderr)
+    if args.only:
+        wanted = {i.strip() for i in args.only.split(",")}
+        proposals = [p for p in proposals if p.id in wanted]
+    if not proposals:
+        print("nothing to apply")
+        return 0
+
+    scanner_ready = scanner_mod.available()
+    if not scanner_ready:
+        print("warning: skillspector not found — anything scannable will be refused",
+              file=sys.stderr)
+
+    decisions = []
+    for proposal in proposals:
+        staged = stage_skill(proposal, repo_root) if proposal.kind == "skill" else None
+        verdict = None
+        error = None
+        if requires_scan(proposal) and scanner_ready:
+            target = scan_target(proposal, staged)
+            if target:
+                print(f"scanning {target} ...", file=sys.stderr)
+                try:
+                    verdict = scanner_mod.scan(target, use_llm=not args.no_llm)
+                except Exception as exc:
+                    error = str(exc)
+        decisions.append(
+            decide(proposal, verdict, scanner_available=scanner_ready, scan_error=error)
+        )
+
+    print(f"\n{json.dumps(summarise(decisions))}")
+    for decision in decisions:
+        _describe(decision)
+
+    if args.dry_run:
+        print("\ndry run — nothing applied")
+        return 0
+
+    records = []
+    for decision in decisions:
+        if decision.action == BLOCK:
+            continue
+        if not args.yes:
+            answer = input(f"\napply {decision.proposal.id} "
+                           f"({decision.proposal.title})? [y/N] ").strip().lower()
+            if answer not in ("y", "yes"):
+                print("  skipped")
+                continue
+        record = apply_decision(decision, cfg, repo_root)
+        print(f"  {'ok' if record.ok else 'failed'}: {record.detail}")
+        records.append(record)
+
+    if records:
+        note_path = saved.get("note_path")
+        if note_path:
+            append_to_note(Path(note_path), records)
+        ledger = Ledger(cfg.ledger_path)
+        ledger.record(
+            "youtube", source_id,
+            note_path=note_path,
+            status="applied" if all(r.ok for r in records) else "partial",
+        )
+        print(f"\nrecorded {len(records)} action(s) in the note")
     return 0
 
 
@@ -165,6 +285,14 @@ def build_parser() -> argparse.ArgumentParser:
     note.add_argument("--synthesis", required=True, help="path to the agent's JSON")
     note.add_argument("--dry-run", action="store_true", help="print instead of writing")
     note.set_defaults(func=cmd_note)
+
+    apply_p = sub.add_parser("apply", help="review and apply proposals for a source")
+    apply_p.add_argument("ref", help="the reference the note was built from")
+    apply_p.add_argument("--only", help="comma-separated proposal ids")
+    apply_p.add_argument("--yes", action="store_true", help="skip per-item prompts")
+    apply_p.add_argument("--dry-run", action="store_true", help="decide but do nothing")
+    apply_p.add_argument("--no-llm", action="store_true", help="static-only scanning")
+    apply_p.set_defaults(func=cmd_apply)
 
     inventory = sub.add_parser("inventory", help="what is already installed here")
     inventory.add_argument(
