@@ -83,3 +83,10 @@ apply anything.** Applying is `sla apply` (M4) and requires their approval.
 - **A project idea needs all five parts** (§7.2): what it is, why it is
   *non-obvious*, the stack, a literal first command, and an honest size. Drop
   ideas that cannot carry all five rather than padding them out.
+- **The video must be load-bearing for the idea.** If you could have written it
+  without watching, it is decoration — drop it. **Zero ideas is a valid answer**,
+  exactly as `proposals: []` is. A target count is an instruction to invent.
+- **Where there is no authoritative text to check against** (no description links,
+  no chapters), say in `gaps` that specifics were reconstructed from speech. ASR is
+  unreliable for any notation a domain treats as precise — product names, card
+  notation, version numbers, command flags.

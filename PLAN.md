@@ -208,6 +208,15 @@ A project idea is not "build an app with n8n." Each one must carry:
 Ideas that fail the bar are dropped rather than padded. Three real ideas beat eight
 generic ones.
 
+**And a sixth requirement, which §7.2 originally missed:** the video must be
+*load-bearing* for the idea. If the same idea could be written having never watched
+it, it is decoration. Say so and drop it. **Zero project ideas is a valid outcome**,
+for the same reason `proposals: []` is (I3) — a target count is pressure to invent,
+and inventing is the failure mode both rules exist to prevent.
+
+Found by running a poker video through the pipeline (§19): two ideas were defensible
+and a third would have been padding to reach a range the plan had asked for.
+
 ---
 
 ## 8. Security model — the gate
@@ -599,3 +608,43 @@ is therefore `{"skill"}`; for a clone the verdict is loud but advisory.
 - A scan that errors blocks; a scanner that is absent blocks anything scannable.
 - Proposals are **re-validated when loaded from disk**, not trusted because they were
   written by an earlier run.
+
+---
+
+## 19. Field notes: out-of-domain source (2026-09-08)
+
+Ran `gPPT4WpVRZ4` — *"How to beat low stakes poker! (Every Strategy)"*, 46.8 min,
+9,758 words — deliberately chosen as a source the design was not built for. It is now
+the `conceptual` fixture the plan had been missing.
+
+Everything the design leans on was absent at once:
+
+| Normally relied on | Here |
+|---|---|
+| Chapters, for entity alignment | **none** — single-block fallback |
+| Description links, authoritative for names (I1) | **none** — three links to the creator's paid courses |
+| Named tools to dedupe against inventory | **none** |
+
+All three fallbacks held. `class: conceptual`, `proposals: []`, `status: no-actions`,
+and the tools table correctly omitted itself.
+
+### ASR breaks the same way in every domain
+
+Card notation degrades exactly as product names do: `ace3` is A-3, `ace deuce` is A-2,
+`king n` is king-nine, `108` is ten-eight, `98` is nine-eight. The failure class is
+identical to `SkillSpector` → "Skill Specter" — **but with no description to correct
+against**, hand examples had to be reconstructed from context and are flagged as
+possibly wrong.
+
+Generalised: I1 is not a YouTube-specific trick. **ASR is unreliable for any notation
+the domain treats as precise.** Where no authoritative text exists, the note must say
+the details are reconstructed rather than quietly present them as transcribed.
+
+### The rule this run changed
+
+§7.1 asked for "3-5" project ideas on conceptual sources. Two were genuinely defensible
+here; a third would have been decoration. Nothing in the system prevented padding — I3
+guards proposals, and the same pressure simply reappeared one section down.
+
+§7.2 now requires the video to be **load-bearing** for an idea, and states that zero
+ideas is valid. A target count is an instruction to invent.
