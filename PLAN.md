@@ -648,3 +648,57 @@ guards proposals, and the same pressure simply reappeared one section down.
 
 §7.2 now requires the video to be **load-bearing** for an idea, and states that zero
 ideas is valid. A target count is an instruction to invent.
+
+---
+
+## 20. Field notes: the load-bearing rule under test (2026-09-09)
+
+Ran `UpE5yuhwXXc` — StarTalk, *"Neil deGrasse Tyson Explains How the Periodic Table
+Works"*, 18.9 min, 3,486 words, 5 chapters — through the installed `/learn-from`
+command rather than through hand-run CLI steps. First end-to-end run of the plugin.
+
+### §7.2 refused ideas it would previously have written
+
+§7.1 asks for 3-5 project ideas on a conceptual source. One survived.
+
+| Candidate | Verdict |
+|---|---|
+| Chemistry tutor over an LLM | **dropped** — writable without watching |
+| Periodic-table visualiser | **dropped** — writable without watching |
+| Rediscover the groups from behaviour alone | **kept** — the video's thesis *is* the premise |
+
+The kept idea works because the video develops a specific claim: elements were grouped
+by observed behaviour and the chart stayed predictive for roughly fifty years before
+electron configuration explained it. That makes the history an answer key for whether
+clustering on measured properties alone recovers the columns. Without the video there
+is no reason to frame the exercise that way.
+
+The rule added in §19 was written the day before and immediately changed an output.
+Recording it because the counterfactual is the point: the earlier prompt would have
+produced three ideas, two of them padding.
+
+### Verification with no authoritative text
+
+The description held a book link, merch and social accounts — no reference material at
+all. ASR could plausibly have mangled the chemists' names, and misattributing a
+discovery would have been invention rather than error.
+
+Substitute check: count how often the audio actually says each name. Mendeleev 3,
+Lavoisier 8, Rutherford 1 — all safe to attribute. Bohr and Dalton appear zero times
+and are therefore absent from the note, despite both being obvious things to mention
+about the periodic table.
+
+**Generalised rule:** where no authoritative text exists, mention-frequency in the
+transcript is the fallback evidence, and anything the source never says stays out of
+the note however plausible it looks. Plausibility is exactly how invention gets in.
+
+### The three fixtures now cover the design's range
+
+| Source | Class | Chapters | Authoritative links | Proposals |
+|---|---|---|---|---|
+| Greg Isenberg, 5 GitHub repos | `tooling` | 7 | 5 GitHub URLs | 3 |
+| BlackRain79, poker strategy | `conceptual` | none | none | 0 |
+| StarTalk, periodic table | `conceptual` | 5 | none | 0 |
+
+Both branches, both chapter paths, and both link conditions are now exercised on real
+content.

@@ -165,11 +165,25 @@ security model enforceable.
 | M0 | Repo skeleton, CI, license | ✅ |
 | M1 | Fetch + cache + ledger | ✅ |
 | M2 | Inventory of installed skills/MCPs | ✅ |
-| M3 | `/learn` → vault note + proposals | ✅ |
+| M3 | `/learn-from` → vault note + proposals | ✅ |
 | M4 | Approval gate + apply | ✅ |
 | M5 | Channel batch processing | |
 | M6 | Scheduled polling | |
 | M7 | Web frontend — paste any link | |
+
+## What it looks like on real videos
+
+Three sources have been run end to end, chosen to stress different parts of the design:
+
+| Video | Class | Result |
+|---|---|---|
+| *5 GitHub Repos* (Greg Isenberg) | `tooling` | 3 proposals — one dropped because `brand-voice` already covered it |
+| *How to beat low stakes poker* | `conceptual` | 0 proposals, 2 project ideas |
+| *How the Periodic Table Works* (StarTalk) | `conceptual` | 0 proposals, 1 project idea |
+
+The poker and periodic-table videos have no chapters, no GitHub links, and nothing
+installable. They still produce notes worth keeping — and correctly propose nothing.
+That is the design working, not failing.
 
 ## Known limitations
 

@@ -1,184 +1,148 @@
 # Handover
 
-Paste this file to a new session to pick the project up cold.
+Paste this to a new session to pick the project up cold.
 
 ---
 
 ## What this is
 
-`self-learning-agent` — a pipeline that watches a creator's video (Greg Isenberg and
-others), writes a note into an Obsidian vault explaining what it teaches and what to
-use, then installs and configures the worthwhile parts **behind an explicit human
-approval gate**.
+`self-learning-agent` — point a coding agent at a video; get an Obsidian note worth
+keeping and a set of setup actions you explicitly approve before anything installs.
 
-Open source, MIT. Repo: https://github.com/Soham-1827/Self-Learning-Agent-Claude
-Owner: @Soham-1827 — an AI student who wants to build projects from what these videos teach.
+- Repo: https://github.com/Soham-1827/Self-Learning-Agent-Claude (MIT)
+- Owner: **@Soham-1827**, an AI student who wants to build projects from what these
+  videos teach. Notes should serve that, not just summarise.
 
-**Read [PLAN.md](PLAN.md) first.** It is the source of truth: decisions D1–D7,
-improvements I1–I4, the security model, and field notes from each milestone.
+**[PLAN.md](PLAN.md) is the source of truth.** Decisions D1–D7, improvements I1–I4,
+the security model (§8), and field notes from every milestone (§15–§20).
 
-## Where things stand
+## Status
 
-| M | What | Status |
+**v1 (M0–M4) is complete.** 169 tests, 80% coverage.
+
+| M | | |
 |---|---|---|
-| M0 | Repo skeleton, CI (py3.10–3.12), MIT | ✅ done |
-| M1 | `sla fetch` — resolve, fetch, cache, dedupe | ✅ done |
-| M2 | `sla inventory` — installed skills / MCP / CLIs | ✅ done |
-| M3 | `/learn` — synthesis into a vault note + `proposals.json` | ✅ done |
-| M4 | Approval gate + `sla apply` | ✅ done |
-| M5–M7 | Channel batch, scheduling, frontend | not started |
+| M0 | Repo, CI (3.10–3.12), MIT | ✅ |
+| M1 | `sla fetch` — resolve, fetch, cache, dedupe | ✅ |
+| M2 | `sla inventory` — installed skills / MCP / CLIs | ✅ |
+| M3 | `/learn-from` — synthesis → vault note + proposals | ✅ |
+| M4 | Approval gate + `sla apply`, SkillSpector scanning | ✅ |
+| M5 | Channel batch: `--last 5` | ⬅ **next** |
+| M6 | Scheduled polling | |
+| M7 | Web frontend | |
 
-**v1 = M0–M4, complete.** 169 tests passing, 80% coverage.
+## Environment (WSL, Ubuntu-22.04)
 
-## How to run it
-
-Installed and on PATH — `sla` is symlinked from `.venv/bin/sla` into `~/.local/bin`:
+Everything is installed. **Do not reach for `sudo`** — system `python3` is 3.10 with no
+`pip` and no `ensurepip`, but `uv` is present and solves it without a password while
+supplying its own interpreter.
 
 ```bash
-sla fetch "https://www.youtube.com/watch?v=9_SZFIW7tus"
-sla inventory
-sla inventory --against "audits skills for prompt injection"
-sla apply "<same-url>" --dry-run
+uv venv --python 3.14 .venv                              # already done
+uv pip install --python .venv/bin/python -e ".[dev]"     # already done
+```
+
+- **`sla` is on PATH** — symlinked from `.venv/bin/sla` into `~/.local/bin`.
+- **`/learn-from <url>`** works in any Claude Code session. Named `learn-from`, *not*
+  `learn`, because `everything-claude-code` owns `/learn`; installing over it would
+  have clobbered a working command.
+- **Tests:** `.venv/bin/python -m pytest` (Python 3.14.7; CI covers 3.10–3.12).
+- **`yt-dlp`** is a zipapp at `~/.local/bin/yt-dlp.pyz`; `SLA_YTDLP` overrides.
+- **`skillspector`** via uv. `SKILLSPECTOR_PROVIDER=openai` + `OPENAI_API_KEY` are in
+  `~/.profile`, so they are absent from non-login shells — run scans via a login shell.
+- **Git pushes** work through the Windows Credential Manager. `/mnt/d` is v9fs and
+  occasionally fails a ref write; **retry the commit, it is transient**.
+- Never work around a missing pip by piping a downloaded script into Python. That is
+  the exact pattern the project classifies as risk tier `high`.
+
+**Windows also works** (`pip`, Python 3.12) but cannot see the 257 skills that make
+inventory worth running, and state is per-platform — a note written in WSL cannot be
+applied from Windows. WSL is the right home.
+
+## Commands
+
+```bash
+sla fetch "<url|@handle>"          # resolve + cache a source
+sla brief "<url>" --out b.json     # the agent's input packet
+sla note  "<url>" --synthesis s.json
+sla apply "<url>" [--dry-run]      # scan, decide, prompt per proposal
+sla inventory [--against "text"]
 sla status
 ```
 
-The plugin is installed too: **`/learn-from <url>`** in any Claude Code session.
-It is named `learn-from`, not `learn`, because `everything-claude-code` already owns
-`/learn` and installing over it would have clobbered a working command.
+## Rules that are load-bearing, not stylistic
 
-## Environment gotchas (this machine, WSL2)
+1. **The description is authoritative for entity names; the transcript is
+   authoritative for reasoning about them** (§15). ASR renders `SkillSpector` as
+   "Skill Specter" and `Claude Code` as "Cloud Code" — exactly the tokens needed to
+   find a repo. `Link.repo_slug` preserves URL casing and is regression-tested.
+2. **The agent never emits a shell string** (§8 Rule 1). A proposal names a package on
+   a registry; Python renders the command from a template. Claimed risk is discarded
+   and recomputed by `derive_risk`.
+3. **A scan gates activation, not download** (§18). `SCAN_CAN_BLOCK == {"skill"}`.
+   Cloning to staging executes nothing and is how you inspect a repo — blocking it
+   prevents the review it exists for. SkillSpector scores full application repos
+   CRITICAL on false positives, and a gate that blocks on that gets switched off.
+4. **Empty output is correct output.** `proposals: []` (I3) and zero project ideas
+   (§7.2) are both valid. A target count is an instruction to invent.
+5. **A project idea must be load-bearing** — if it could be written without watching,
+   it is decoration. Drop it (§19, demonstrated §20).
+6. **Where no authoritative text exists**, mention-frequency in the transcript is the
+   fallback check, and anything the source never says stays out of the note however
+   plausible (§20).
+7. **Never infer a creator's pronouns** from a name, handle, or voice.
 
-1. **System `python3` is 3.10 with no `pip` and no `ensurepip`** — Ubuntu splits those
-   into `python3-venv`, which is not installed. **Do not reach for `sudo`**: `uv` is
-   already installed and solves this without a password, and it supplies its own
-   interpreter, which also clears the 3.10 problem.
+## Fixtures — all three are real, processed sources
 
-   ```bash
-   uv venv --python 3.14 .venv
-   uv pip install --python .venv/bin/python -e ".[dev]"
-   .venv/bin/sla status          # or: source .venv/bin/activate && sla status
-   .venv/bin/python -m pytest    # 169 tests, 80% coverage
-   ```
+| Source | Class | Chapters | Links | Proposals |
+|---|---|---|---|---|
+| `9_SZFIW7tus` Greg Isenberg, 5 GitHub repos | `tooling` | 7 | 5 GitHub | 3 |
+| `gPPT4WpVRZ4` BlackRain79, poker | `conceptual` | none | none | 0 |
+| `UpE5yuhwXXc` StarTalk, periodic table | `conceptual` | 5 | none | 0 |
 
-   Never work around a missing pip by piping a downloaded script into Python — that is
-   the exact pattern this project classifies as risk tier `high`.
-2. **The venv is at `.venv/` (gitignored).** Tests run under Python 3.14.7 there, while
-   CI covers 3.10–3.12.
-3. **`yt-dlp` is a zipapp** at `~/.local/bin/yt-dlp.pyz`, not a pip package.
-   `config.discover_ytdlp()` finds it. Override with `SLA_YTDLP`.
-4. **Python is 3.10.12** and yt-dlp warns 3.10 is deprecated. CI covers 3.10–3.12.
-5. **Git pushes work** via the Windows Git Credential Manager, wired up during setup
-   (`credential.helper` in global git config). `gh` is not installed.
-6. Project lives on `/mnt/d` (v9fs); `~/.claude` is on ext4. This matters for symlinks.
+Only the first is committed under `tests/fixtures/`. Notes for all three are in
+`/mnt/d/LearningVault/Sources/`.
 
-## Running it on Windows vs WSL
+## What to build next: M5
 
-Both work. They have complementary gaps, and this is worth knowing before debugging
-a "broken" install:
+`sla brief "@GregIsenberg" --last 5`. `YouTubeSource._channel_video_ids` already
+exists and works; the ledger already dedupes. What is missing is batch orchestration
+and a per-run cost cap, since five 45-minute transcripts is a lot of tokens.
 
-| | Windows (Git Bash / PowerShell) | WSL |
-|---|---|---|
-| `pip` | present | **missing** (needs `sudo apt install python3-pip`) |
-| Python | 3.12 | 3.10 — deprecated by yt-dlp, below SkillSpector's 3.12 floor |
-| The 256 installed skills | **not visible** (1 skill in the Windows `~/.claude`) | all of them |
-| Claude Code | — | runs here |
-
-State is **not shared**: config, ledger, cache and stored proposals live under each
-platform's own home, so a note written in WSL cannot be applied from Windows. Point
-`SLA_HOME` at a shared path if you need one environment to see the other's work.
-
-Windows Python cannot read WSL's `~/.claude` through the `\\wsl$` share when invoked
-from inside WSL, so `CLAUDE_CONFIG_DIR` is not a workaround for the inventory gap.
-
-**Recommendation: WSL, once `pip` is installed there.** It is where the skills and
-Claude Code live, and inventory is the step that makes notes useful rather than noisy.
-
-```bash
-# Git Bash / VS Code terminal on Windows
-PYTHONPATH=src python -m self_learning_agent.cli fetch "<url>"
-
-# PowerShell
-$env:PYTHONPATH="src"; python -m self_learning_agent.cli fetch "<url>"
-
-# WSL
-PYTHONPATH=src python3 -m self_learning_agent.cli fetch "<url>"
-```
-
-## The two findings that shaped the design
-
-### 1. Descriptions beat transcripts for names (PLAN §15)
-
-Auto-captions are clean, punctuated prose — but proper nouns break:
-`SkillSpector` → "Skill Specter", `Claude Code` → "Cloud Code". Those are exactly the
-tokens needed to find a repo. The description holds the correct URLs verbatim.
-
-> **The description is authoritative for entity names. The transcript is
-> authoritative for reasoning about them.**
-
-`Link.repo_slug` preserves URL casing for this reason and is regression-tested.
-
-### 2. `Path.rglob` hides symlinked skills (PLAN §16)
-
-32 of 224 skill directories on this machine are symlinks. `rglob` does not descend
-into them, so the first inventory silently found 191 of 223. Fixed with
-`os.walk(followlinks=True)` plus realpath cycle protection. Regression-tested.
-
-Side effect: this **proves Claude Code follows symlinks** for skill discovery, which
-resolved an open question. Copy is still the default install mode (D7) for
-cross-platform reasons, but `install_mode = "symlink"` is now known to work.
-
-## What to build next: M5 (channel batch)
-
-Turn a `SourceDocument` + `Inventory` into a vault note and `proposals.json`.
-
-The pieces already exist: `sources.YouTubeSource.fetch()` gives the document,
-`inventory.collect()` gives what is installed. M3 is the synthesis step plus
-`vault.py` to render and write the note.
-
-Specified in PLAN.md §7 (note format), §7.1 (classification), §7.2 (project-idea
-quality bar), §9 (`proposals.json` schema).
-
-**Do not skip these when implementing M3:**
-
-- **Entity reconciliation, not extraction.** Candidate names come from description
-  links; transcript discussion is aligned to them by chapter position. A tool named
-  only in speech and never linked is low-confidence **by construction** and belongs in
-  `## Gaps & uncertainty`, never in a proposal.
-- **`proposals: []` is a correct, common output** (I3). If synthesis is expected to
-  produce actions it will invent them. Conceptual videos usually have nothing to install.
-- **The agent never emits a shell string** (§8 Rule 1). A proposal names a package on a
-  registry; Python renders the command from a template.
-- **`similar_skills()` is a shortlist, not a verdict.** Keyword overlap cannot tell that
-  two descriptions mean the same thing; it narrows 256 skills to ~3 for the agent to
-  read and judge. `has_skill` / `has_mcp` / `has_cli` are the exact, reliable checks.
-
-## Test fixture
-
-`9_SZFIW7tus` — Greg Isenberg, *"5 GitHub Repos: Kill AI Slop, Go Viral, Make Money"*,
-24.7 min, 7 chapters, 5 GitHub repos in the description, 4150 words of auto-captions.
-Trimmed metadata and captions are committed under `tests/fixtures/`, so the suite runs
-offline. It is an ideal `tooling`-class example. **A `conceptual`-class fixture is still
-needed** to test the other branch of §7.1.
-
-## Open questions (PLAN §14)
-
-- Exact folder structure inside the vault
-- Per-run token/cost cap for batch mode (M5)
+Open questions (PLAN §14):
+- Folder structure inside the vault
+- Per-run token/cost cap for batch mode
 - Whether `none`-risk auto-apply is opt-in or always-confirm
 
-## Prompt to paste into a new session
+## Known unfinished
 
-> I'm building `self-learning-agent`, an open-source pipeline that turns YouTube videos
-> into Obsidian notes plus human-approved tool setup. Read `HANDOVER.md` and `PLAN.md`
-> in this repo — PLAN.md is the source of truth for decisions.
+- **`sla apply` has never been run to completion.** Only `--dry-run`. Nothing has been
+  installed through the gate yet. `p1` on the Greg note (the `scan-before-install`
+  skill, risk `none`, scans clean) is the natural first candidate.
+- `cli.py` is at 35% coverage and `youtube.py` at 56% — the remainder is network I/O.
+- Vision on sampled frames is deferred. Videos demo things on screen while the audio
+  says "just paste this in here"; description links only partly cover it.
+
+## Prompt for a new session
+
+> I'm building `self-learning-agent`, an open-source pipeline that turns YouTube
+> videos into Obsidian notes plus human-approved tool setup. Read `HANDOVER.md` and
+> `PLAN.md` in this repo — PLAN.md is the source of truth for decisions.
 >
-> M0–M2 are done (fetch, cache, dedupe, inventory), 45 tests passing. Next is M3:
-> synthesis into a vault note plus `proposals.json`, specified in PLAN.md §7, §7.1,
-> §7.2 and §9.
+> v1 (M0–M4) is complete: fetch, inventory, synthesis, and an approval gate that scans
+> with SkillSpector before activating anything. 169 tests at 80% coverage. `sla` is on
+> PATH and `/learn-from <url>` works in any session. Next is M5, batch channel
+> processing.
 >
-> Two rules that are load-bearing, not stylistic: the video description is
+> Four rules are load-bearing rather than stylistic: the video description is
 > authoritative for entity names while the transcript is authoritative for reasoning
-> about them (§15), and the agent must never emit a shell string — proposals name
-> registry packages and Python renders the command (§8 Rule 1).
+> about them (§15); the agent must never emit a shell string — proposals name registry
+> packages and Python renders the command (§8 Rule 1); a scan blocks activation but
+> never a download, because cloning to staging is how you inspect something (§18); and
+> empty output is correct output — no proposals, or no project ideas, beats inventing
+> either (I3, §7.2).
 >
-> Note `pip` is not installed on this machine and installing it needs sudo.
+> Environment: WSL, use the venv at `.venv` (created with uv — do not use sudo or
+> pip-bootstrap scripts). Run tests with `.venv/bin/python -m pytest`. SkillSpector
+> needs a login shell to see `OPENAI_API_KEY`. If a git commit fails with "couldn't set
+> refs/heads/main", it is a transient v9fs issue — just retry.
