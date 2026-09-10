@@ -25,8 +25,16 @@ This turns that firehose into two things you can use: **a note in your vault**, 
 ## What it does
 
 ```bash
-/learn https://youtube.com/watch?v=...     # one video
-/learn @GregIsenberg --last 5              # a channel's recent uploads
+/learn-from https://youtube.com/watch?v=...   # one video
+/learn-from @GregIsenberg                     # a channel's latest
+```
+
+Or from a shell:
+
+```bash
+sla brief "<url>" --out brief.json   # gather
+sla note  "<url>" --synthesis s.json # render the note
+sla apply "<url>"                    # review proposals, one at a time
 ```
 
 It pulls the transcript, description, and chapters; checks what you already have
@@ -100,6 +108,36 @@ On top of that:
 
 Full model in [PLAN.md §8](PLAN.md). The adversarial-transcript test suite is the one
 that isn't allowed to go red.
+
+## Install
+
+Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/) (or pip).
+
+```bash
+git clone https://github.com/Soham-1827/Self-Learning-Agent-Claude.git
+cd Self-Learning-Agent-Claude
+uv venv --python 3.12 .venv
+uv pip install --python .venv/bin/python -e ".[dev]"
+```
+
+For the `/learn-from` command in Claude Code, copy the plugin pieces into your
+config directory:
+
+```bash
+cp -r skills/learn-from-source ~/.claude/skills/
+cp commands/learn-from.md ~/.claude/commands/
+ln -s "$PWD/.venv/bin/sla" ~/.local/bin/sla
+```
+
+Then point it at a vault by writing `~/.self-learning-agent/config.json`:
+
+```json
+{ "vault_path": "~/LearningVault", "vault_subdir": "Sources", "install_mode": "copy" }
+```
+
+Scanning needs [SkillSpector](https://github.com/NVIDIA/skillspector)
+(`uv tool install git+https://github.com/NVIDIA/skillspector.git`). Without it the
+gate refuses to activate any skill, by design.
 
 ## Design
 

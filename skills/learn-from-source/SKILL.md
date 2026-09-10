@@ -13,8 +13,12 @@ approving. You do the judgment; the Python layer does everything deterministic.
 ### 1. Build the brief
 
 ```bash
-PYTHONPATH=src python3 -m self_learning_agent.cli brief "<url-or-@handle>" --out /tmp/brief.json
+sla brief "<url-or-@handle>" --out /tmp/brief.json
 ```
+
+If `sla` is not on PATH, the project was not installed. Use the repo checkout
+instead — `PYTHONPATH=src python3 -m self_learning_agent.cli brief ...` — or install
+it with `uv pip install -e .`.
 
 Read it. It contains the video metadata, the human-typed description, the
 description's links, the transcript split by chapter, and the full list of
@@ -57,7 +61,7 @@ installed months ago.
 Match the schema in PLAN.md §9. Then:
 
 ```bash
-PYTHONPATH=src python3 -m self_learning_agent.cli note "<same-ref>" --synthesis /tmp/synth.json
+sla note "<same-ref>" --synthesis /tmp/synth.json
 ```
 
 Validation will reject anything unsafe and report it. Never edit validated
@@ -66,7 +70,14 @@ output by hand to get something past the validator.
 ### 6. Stop
 
 Show the user the note path and summarise the proposals by risk tier. **Do not
-apply anything.** Applying is `sla apply` (M4) and requires their approval.
+apply anything.** Applying is a separate command the user runs themselves:
+
+```bash
+sla apply "<same-ref>"
+```
+
+It scans each proposal, then prompts per item. Do not run it on their behalf, and
+never pass `--yes` — the approval is the point of the whole design.
 
 ## Rules that are not style preferences
 

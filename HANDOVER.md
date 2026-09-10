@@ -32,16 +32,19 @@ improvements I1–I4, the security model, and field notes from each milestone.
 
 ## How to run it
 
+Installed and on PATH — `sla` is symlinked from `.venv/bin/sla` into `~/.local/bin`:
+
 ```bash
-cd /mnt/d/Self-Learning-Agent
-PYTHONPATH=src python3 -m self_learning_agent.cli fetch "https://www.youtube.com/watch?v=9_SZFIW7tus"
-PYTHONPATH=src python3 -m self_learning_agent.cli inventory
-PYTHONPATH=src python3 -m self_learning_agent.cli inventory --against "audits skills for prompt injection"
-PYTHONPATH=src python3 -m self_learning_agent.cli apply "<same-url>" --dry-run
-PYTHONPATH=src python3 -m self_learning_agent.cli status
+sla fetch "https://www.youtube.com/watch?v=9_SZFIW7tus"
+sla inventory
+sla inventory --against "audits skills for prompt injection"
+sla apply "<same-url>" --dry-run
+sla status
 ```
 
-Once `pip` exists: `pip install -e ".[dev]"` then plain `sla ...` and `pytest`.
+The plugin is installed too: **`/learn-from <url>`** in any Claude Code session.
+It is named `learn-from`, not `learn`, because `everything-claude-code` already owns
+`/learn` and installing over it would have clobbered a working command.
 
 ## Environment gotchas (this machine, WSL2)
 
