@@ -28,7 +28,7 @@ improvements I1–I4, the security model, and field notes from each milestone.
 | M4 | Approval gate + `sla apply` | ✅ done |
 | M5–M7 | Channel batch, scheduling, frontend | not started |
 
-**v1 = M0–M4, complete.** 124 tests passing.
+**v1 = M0–M4, complete.** 169 tests passing, 80% coverage.
 
 ## How to run it
 
@@ -45,14 +45,22 @@ Once `pip` exists: `pip install -e ".[dev]"` then plain `sla ...` and `pytest`.
 
 ## Environment gotchas (this machine, WSL2)
 
-1. **No `pip`, no `ensurepip`, no `python3-venv`.** Needs
-   `sudo apt install -y python3-pip python3-venv` — requires the user's password, so
-   an agent cannot do it. Until then `pytest` cannot be installed.
-   Do **not** work around this by piping a downloaded script into Python; that is the
-   exact pattern the project classifies as risk tier `high`.
-2. **Tests currently run via a stand-in runner** at
-   `<scratchpad>/minirunner.py` (emulates fixtures / raises / parametrize / tmp_path).
-   It is throwaway — delete it once pytest is installed.
+1. **System `python3` is 3.10 with no `pip` and no `ensurepip`** — Ubuntu splits those
+   into `python3-venv`, which is not installed. **Do not reach for `sudo`**: `uv` is
+   already installed and solves this without a password, and it supplies its own
+   interpreter, which also clears the 3.10 problem.
+
+   ```bash
+   uv venv --python 3.14 .venv
+   uv pip install --python .venv/bin/python -e ".[dev]"
+   .venv/bin/sla status          # or: source .venv/bin/activate && sla status
+   .venv/bin/python -m pytest    # 169 tests, 80% coverage
+   ```
+
+   Never work around a missing pip by piping a downloaded script into Python — that is
+   the exact pattern this project classifies as risk tier `high`.
+2. **The venv is at `.venv/` (gitignored).** Tests run under Python 3.14.7 there, while
+   CI covers 3.10–3.12.
 3. **`yt-dlp` is a zipapp** at `~/.local/bin/yt-dlp.pyz`, not a pip package.
    `config.discover_ytdlp()` finds it. Override with `SLA_YTDLP`.
 4. **Python is 3.10.12** and yt-dlp warns 3.10 is deprecated. CI covers 3.10–3.12.
