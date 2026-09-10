@@ -8,6 +8,7 @@ import pytest
 from self_learning_agent import apply as apply_mod
 from self_learning_agent.apply import (
     _remove_cmd,
+    _restore_cmd,
     append_to_note,
     apply_decision,
     scan_target,
@@ -202,11 +203,26 @@ def test_a_missing_note_is_not_an_error(tmp_path):
     append_to_note(tmp_path / "gone.md", [AppliedRecord("p1", "t", True, "ok")])
 
 
-def test_undo_commands_match_the_host_platform(monkeypatch):
-    monkeypatch.setattr(apply_mod.os, "name", "nt")
-    assert "Remove-Item" in _remove_cmd(Path("C:/x"))
-    monkeypatch.setattr(apply_mod.os, "name", "posix")
-    assert _remove_cmd(Path("/x")).startswith("rm -rf")
+def test_undo_commands_match_the_host_platform():
+    """Platform is passed in, never patched onto `os.name`.
+
+    Setting `os.name` is process-global: pathlib reads it to choose between
+    PosixPath and WindowsPath, so on Python <=3.12 every later `Path()` raises
+    NotImplementedError — including the ones pytest makes while reporting the
+    failure, which turns a test bug into an INTERNALERROR with no useful output.
+    """
+    assert "Remove-Item" in _remove_cmd(Path("C:/x"), windows=True)
+    assert _remove_cmd(Path("/x"), windows=False).startswith("rm -rf")
+
+
+def test_restore_commands_match_the_host_platform():
+    assert "Copy-Item" in _restore_cmd(Path("/b"), Path("/p"), windows=True)
+    assert _restore_cmd(Path("/b"), Path("/p"), windows=False).startswith("cp ")
+
+
+def test_platform_detection_defaults_to_this_host():
+    expected = "Remove-Item" if apply_mod._is_windows() else "rm -rf"
+    assert expected in _remove_cmd(Path("/x"))
 
 
 def test_staging_dir_is_created_under_home(tmp_path):

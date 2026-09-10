@@ -34,11 +34,29 @@ class AppliedRecord:
         return f"- **{mark}** `{self.proposal_id}` {self.title} — {self.detail}{undo}"
 
 
-def _remove_cmd(path: Path) -> str:
+def _is_windows() -> bool:
+    """Indirection so tests can vary the platform without touching `os.name`.
+
+    Patching `os.name` globally changes how `pathlib` builds every Path in the
+    process, which on Python <=3.12 makes `Path()` raise NotImplementedError
+    for the rest of the run — including inside pytest's own error reporting.
+    """
+    return os.name == "nt"
+
+
+def _remove_cmd(path: Path, *, windows: bool | None = None) -> str:
     """A delete command the user can actually paste into their own shell."""
-    if os.name == "nt":
+    if windows is None:
+        windows = _is_windows()
+    if windows:
         return f'Remove-Item -Recurse -Force "{path}"'
     return f"rm -rf {path}"
+
+
+def _restore_cmd(backup: Path, path: Path, *, windows: bool | None = None) -> str:
+    if windows is None:
+        windows = _is_windows()
+    return f'Copy-Item "{backup}" "{path}"' if windows else f"cp {backup} {path}"
 
 
 def staging_dir(config: Config) -> Path:
@@ -138,11 +156,8 @@ def _add_mcp_server(proposal: Proposal) -> AppliedRecord:
         "args": ["-y", proposal.action["package"]],
     }
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    restore = (
-        f'Copy-Item "{backup}" "{path}"' if os.name == "nt" else f"cp {backup} {path}"
-    )
     return _record(proposal, True, f"added MCP server {name!r} (backup: {backup.name})",
-                   undo=restore)
+                   undo=_restore_cmd(backup, path))
 
 
 def _record(p: Proposal, ok: bool, detail: str, undo: str | None = None) -> AppliedRecord:

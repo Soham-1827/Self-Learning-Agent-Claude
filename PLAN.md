@@ -366,6 +366,12 @@ Per repo standards (80% minimum, TDD):
 - **Classification:** fixture set of known `tooling` / `conceptual` videos; a misclassification is a real bug, not a style issue.
 - **Security (highest value):** adversarial fixture transcripts containing injection attempts (`curl | sh`, `rm -rf`, "ignore previous instructions") must classify `high` and never execute. This suite is the one that must never go red.
 - **Integration:** fixture video → full PLAN phase → assert note structure.
+- **Never mutate global interpreter state in a test.** Patching `os.name` to check
+  platform-specific output changes how `pathlib` builds every Path in the process; on
+  Python ≤3.12 that makes `Path()` raise for the rest of the run, including inside
+  pytest's own error reporting, so a small test bug surfaces as an INTERNALERROR with
+  no usable output. Pass the platform in as a parameter instead. Local runs on 3.14
+  hid this entirely — verify across the matrix, not just the dev interpreter.
 - **Install mode:** copy activates correctly; drift between repo and live copy is detected and reported, never silently overwritten.
 - **E2E:** one live network test, marked, off by default in CI.
 
