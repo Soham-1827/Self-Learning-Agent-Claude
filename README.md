@@ -1,4 +1,4 @@
-# Self-Learning Agent
+# Self-Learning Agent Version 2
 
 **Point your coding agent at a video. Get a note you'll keep, and a setup you approved.**
 
