@@ -98,3 +98,85 @@ def test_document_summary_exposes_repo_slugs(meta, captions):
     assert summary["title"].startswith("5 GitHub Repos")
     assert "NVIDIA/SkillSpector" in [link["repo"] for link in summary["links"]]
     assert summary["text_quality"] == "auto_captions"
+
+
+def _apply_harness(tmp_path, monkeypatch, skill_name):
+    """Drive cmd_apply with one skill proposal, recording where it staged and scanned.
+
+    Writes aimed at the real checkout are redirected, so no test touches the repo.
+    """
+    from self_learning_agent.scanner import ScanVerdict
+
+    cfg = Config(home=tmp_path / "home")
+    store = cfg.home / "proposals"
+    store.mkdir(parents=True)
+    (store / "abc12345678.json").write_text(json.dumps({
+        "source_id": "abc12345678",
+        "note_path": None,
+        "proposals": [{"kind": "skill", "title": "probe",
+                       "action": {"name": skill_name, "content": "# probe"}}],
+    }), encoding="utf-8")
+    monkeypatch.setattr(cli.config_mod, "load", lambda: cfg)
+
+    class _Source:
+        source_type = "youtube"
+
+        def __init__(self, *a, **k):
+            pass
+
+        def resolve(self, ref, limit=1):
+            return ["abc12345678"]
+
+    monkeypatch.setattr(cli, "YouTubeSource", _Source)
+
+    repo_root = Path(cli.__file__).resolve().parents[2]
+    roots = []
+    real_stage = cli.stage_skill
+
+    def recording_stage(proposal, root):
+        roots.append(Path(root))
+        target = tmp_path / "repo" if Path(root) == repo_root else root
+        return real_stage(proposal, target)
+
+    monkeypatch.setattr(cli, "stage_skill", recording_stage)
+
+    seen = {}
+
+    def fake_scan(target, use_llm=True):
+        skill = Path(target) / "SKILL.md"
+        seen["target"] = Path(target)
+        seen["mode"] = skill.stat().st_mode if skill.exists() else None
+        return ScanVerdict(str(target), 0, "LOW", "CAUTION", (), False, True)
+
+    monkeypatch.setattr(cli.scanner_mod, "available", lambda: True)
+    monkeypatch.setattr(cli.scanner_mod, "scan", fake_scan)
+    return seen, roots, repo_root
+
+
+def test_dry_run_writes_nothing_into_the_repo(tmp_path, monkeypatch):
+    seen, roots, repo_root = _apply_harness(tmp_path, monkeypatch, "dry-run-probe")
+    args = cli.build_parser().parse_args(["apply", "https://youtu.be/abc12345678", "--dry-run"])
+    assert cli.cmd_apply(args) == 0
+
+    assert repo_root not in roots                     # no reviewable copy on a dry run
+    assert seen["mode"] is not None                   # the scan saw a real file
+    assert repo_root not in seen["target"].parents    # staged outside the repo
+    assert not seen["target"].exists()                # and cleaned up afterwards
+
+
+def test_a_real_run_scans_a_scratch_copy_not_the_repo(tmp_path, monkeypatch):
+    """Scanning the repo copy made verdicts depend on the checkout's filesystem.
+
+    A Windows drive in WSL reports every file as 0777, SkillSpector treats an
+    executable SKILL.md as code, and the same skill scored 9 there and 0 elsewhere.
+    """
+    seen, roots, repo_root = _apply_harness(tmp_path, monkeypatch, "real-run-probe")
+    monkeypatch.setattr("builtins.input", lambda prompt="": "n")
+    args = cli.build_parser().parse_args(["apply", "https://youtu.be/abc12345678"])
+    assert cli.cmd_apply(args) == 0
+
+    assert repo_root in roots                         # reviewable copy still written (D7)
+    assert repo_root not in seen["target"].parents    # but it is not what gets scanned
+    assert seen["mode"] & 0o111 == 0                  # the scanned copy is never executable
+    assert not seen["target"].exists()                # scratch cleaned up
+

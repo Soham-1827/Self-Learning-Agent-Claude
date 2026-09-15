@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tempfile
 from pathlib import Path
 from dataclasses import asdict
 
@@ -184,9 +185,21 @@ def cmd_apply(args) -> int:
         print("warning: skillspector not found — anything scannable will be refused",
               file=sys.stderr)
 
+    # Skills are scanned from a scratch copy, never from the repo. On a Windows
+    # drive mounted in WSL every file reads as 0777 and chmod is ignored, and
+    # SkillSpector treats an executable SKILL.md as code — enabling rules a
+    # markdown skill is exempt from. Scanning the repo copy made a verdict depend
+    # on where the checkout lives, and made --dry-run disagree with a real run.
+    # TemporaryDirectory also cleans up if a scan raises part-way through.
+    scratch = tempfile.TemporaryDirectory(prefix="sla-scan-")
+
     decisions = []
     for proposal in proposals:
-        staged = stage_skill(proposal, repo_root) if proposal.kind == "skill" else None
+        staged = None
+        if proposal.kind == "skill":
+            staged = stage_skill(proposal, Path(scratch.name))
+            if not args.dry_run:
+                stage_skill(proposal, repo_root)  # the reviewable copy (D7)
         verdict = None
         error = None
         if requires_scan(proposal) and scanner_ready:
@@ -206,7 +219,8 @@ def cmd_apply(args) -> int:
         _describe(decision)
 
     if args.dry_run:
-        print("\ndry run — nothing applied")
+        scratch.cleanup()
+        print("\ndry run — nothing applied, nothing written")
         return 0
 
     records = []
@@ -222,6 +236,8 @@ def cmd_apply(args) -> int:
         record = apply_decision(decision, cfg, repo_root)
         print(f"  {'ok' if record.ok else 'failed'}: {record.detail}")
         records.append(record)
+
+    scratch.cleanup()
 
     if records:
         note_path = saved.get("note_path")

