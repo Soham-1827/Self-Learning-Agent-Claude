@@ -1,6 +1,6 @@
 ---
-description: Turn a video, channel, or document into a vault note plus setup proposals awaiting your approval
-argument-hint: <youtube-url | @handle | path>
+description: Turn a YouTube video or channel into a vault note plus setup proposals awaiting your approval
+argument-hint: <youtube-url | @handle>
 ---
 
 Use the `learn-from-source` skill to process: $ARGUMENTS

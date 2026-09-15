@@ -37,7 +37,7 @@ Open source, MIT, installable by anyone as a Claude Code plugin.
 | # | Decision | Choice | Why |
 |---|---|---|---|
 | D1 | What the pipeline *does* after the doc | **Generates skills AND installs real tools** | Full automation is the point; guarded by the gate in §8 |
-| D2 | Trigger model | **Manual `/learn` first, cron later** | Prove the pipeline end-to-end where you can watch it work |
+| D2 | Trigger model | **Manual `/learn-from` first, cron later** | Prove the pipeline end-to-end where you can watch it work |
 | D3 | Project shape | **Python core + Claude Code plugin** | Deterministic work is tested Python; synthesis is the agent. Frontend later calls the Python layer |
 | D4 | Note destination | **New dedicated vault** (`/mnt/d/LearningVault`) | Keeps machine-generated notes out of human notes; clean OSS default; safe to wipe while tuning |
 | D5 | Transcript source | **`yt-dlp`, anonymous** | Channel listings *and* captions with no API key. YouTube Data API stays optional |
@@ -322,7 +322,7 @@ Invalid proposal → dropped, logged, surfaced in the note. **Never** silently a
 self-learning-agent/
 ├── README.md  PLAN.md  LICENSE (MIT)  pyproject.toml
 ├── .claude-plugin/plugin.json        # installable as a Claude Code plugin
-├── commands/learn.md                 # /learn <url|@handle|path>
+├── commands/learn-from.md            # /learn-from <url|@handle>
 ├── skills/learn-from-source/SKILL.md # synthesis instructions for the agent
 ├── generated-skills/                 # agent-authored skills, in git, pre-activation (D7)
 ├── src/self_learning_agent/
@@ -348,9 +348,9 @@ self-learning-agent/
 | M0 | ✅ Repo skeleton, config, CI, MIT license | `pytest` runs green on an empty suite |
 | M1 | ✅ `sla fetch <url>` → cached `SourceDocument` JSON | Works offline on 2nd run; ledger dedupes |
 | M2 | ✅ `sla inventory` → installed skills/MCPs/CLIs | Correctly lists the 224 local skills |
-| M3 | ✅ `/learn <url>` → note in vault + `proposals.json` | A `tooling` video yields proposals worth approving **and** a `conceptual` video yields ideas worth building |
+| M3 | ✅ `/learn-from <url>` → note in vault + `proposals.json` | A `tooling` video yields proposals worth approving **and** a `conceptual` video yields ideas worth building |
 | M4 | ✅ Gate + `sla apply` | A `medium` proposal installs; a `high` one refuses and prints instructions; a generated skill goes repo → live via copy |
-| M5 | Channel batch: `/learn @GregIsenberg --last 5` | Dedupes against ledger, caps per-run cost |
+| M5 | Channel batch: `/learn-from @GregIsenberg --last 5` | Dedupes against ledger, caps per-run cost |
 | M6 | Scheduled polling | Cron/daemon, digest note per run |
 | M7 | Frontend | Paste a link → same Python entrypoint |
 
@@ -708,3 +708,61 @@ the note however plausible it looks. Plausibility is exactly how invention gets 
 
 Both branches, both chapter paths, and both link conditions are now exercised on real
 content.
+
+---
+
+## 21. Field notes: a verdict that depended on the filesystem (2026-09-14)
+
+The first non-dry run of `sla apply` — every prompt answered "no", so nothing was
+applied — showed the same skill scanning differently depending on where it was written.
+`scan-before-install` scored **0/100** in a dry run and **9/100 with LP3** in a real run,
+from byte-identical content.
+
+Five controlled scans ruled out the obvious suspects one at a time: the path, a
+`Self-Learning-Agent` substring in it, the tempdir API, directory permissions, the
+directory name, and timing. The discriminator was `write_text` versus `shutil.copy` on
+identical bytes — metadata, not content. Flipping only the executable bit settled it:
+
+| Scanned copy | Mode | SkillSpector `executable` | Score |
+|---|---|---|---|
+| written fresh in `/tmp` | 0644 | false | 0 |
+| same file after `chmod +x` | 0755 | true | 9 (LP3) |
+| staged in the repo on `/mnt/d` | 0777 | true | 9 (LP3) |
+| same file after `chmod -x` | 0644 | false | 0 |
+
+**Cause.** `/mnt/d` is DrvFs mounted without `metadata`: every file reports `0777` and
+`chmod` is silently discarded. SkillSpector classifies files partly by mode
+(`is_executable_content(path, data, mode)`), and its least-privilege analyzer skips
+docs-only skills as not applicable. An executable `SKILL.md` therefore turns markdown
+into "code" and switches on rules the skill is exempt from.
+
+**Consequences, both now fixed.**
+
+1. A verdict depended on where the checkout lives — 9 on a Windows drive under WSL, 0
+   on native Linux or macOS, for the same skill.
+2. `--dry-run` disagreed with a real run, **in the unsafe direction**: the dry run was
+   the more lenient. The earlier `9/100, MEDIUM LP3` figures for `p1` in §17–§18 were
+   this artifact, not a property of the skill.
+
+The same session found that `--dry-run` also wrote into `generated-skills/` before it
+checked the flag.
+
+**Fix.** Mode cannot be normalised inside a DrvFs checkout, so it is fixed at both
+boundaries instead:
+
+- Every run, dry or real, scans a scratch copy written with mode `0644`. A real run still
+  writes the repo copy for review (D7), but its mode is never what gets scanned.
+- Activation writes the scanned content with `0644` rather than copying files, so `0777`
+  never reaches `~/.claude/skills`.
+- Activation refuses if the staged copy changed after the scan, is missing, or has
+  anything besides `SKILL.md` beside it. Before this, content edited during the prompt
+  — or an `install.sh` dropped next to the skill — would have activated unscanned.
+
+**Rule:** a scan target must be something we wrote, with deterministic content *and*
+metadata. Never scan a file whose attributes came from the environment, and never
+activate anything other than what the scanner saw.
+
+**Process note.** The five stale `/learn` references fixed alongside this survived a
+week because the earlier rename used `str.replace`, which does nothing when the text
+has drifted. Edits to docs and code now go through an exact-match helper that fails
+when a target is not found exactly once.

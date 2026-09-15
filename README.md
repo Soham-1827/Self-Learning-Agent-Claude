@@ -2,10 +2,11 @@
 
 **Point your coding agent at a video. Get a note you'll keep, and a setup you approved.**
 
-> **Status: v1 complete.** `/learn <url>` produces a vault note with validated
+> **Status: v1 complete.** `/learn-from <url>` produces a vault note with validated
 > proposals, and `sla apply` reviews them one at a time behind a SkillSpector scan.
-> Nothing is ever applied without you saying yes. Architecture is in
-> [PLAN.md](PLAN.md); to pick the work up cold, read [HANDOVER.md](HANDOVER.md).
+> Nothing is ever applied without you saying yes. 178 tests, 83% coverage, CI on
+> Python 3.10–3.13. Architecture is in [PLAN.md](PLAN.md); to pick the work up cold,
+> read [HANDOVER.md](HANDOVER.md).
 
 ---
 
@@ -46,8 +47,8 @@ installs and configures what's worth having.
 Before writing anything, the pipeline inventories your installed skills, MCP servers,
 and CLIs. So the note says:
 
-> Video recommends Playwright MCP — **you already have it**. The new part is his
-> selector-retry pattern, which is worth adding as a skill.
+> Video recommends Playwright MCP — **you already have it**. The new part is the
+> selector-retry pattern it demonstrates, which is worth adding as a skill.
 
 instead of handing you a list of things you installed months ago. It gets *sharper*
 the more you already have, not noisier.
@@ -139,6 +140,46 @@ Scanning needs [SkillSpector](https://github.com/NVIDIA/skillspector)
 (`uv tool install git+https://github.com/NVIDIA/skillspector.git`). Without it the
 gate refuses to activate any skill, by design.
 
+## Applying proposals
+
+Writing a note installs nothing. Read the note, then:
+
+```bash
+sla apply "<url>" --dry-run     # scan and decide; change nothing
+sla apply "<url>"               # scan, decide, then ask about each proposal
+sla apply "<url>" --only p1     # a single proposal
+```
+
+Run it from a real terminal, since it prompts. For each proposal it prints the risk
+tier, the exact command it would run, and the scan verdict, then decides:
+
+| Decision | What happens |
+|---|---|
+| `confirm` | You are asked `[y/N]`. Anything other than `y` skips it. |
+| `BLOCKED` | Never offered: off the allowlist, needs a secret, manual by nature, or a skill the scan says not to install. The command is printed for you instead. |
+
+Saying yes does exactly one thing per kind:
+
+| Kind | Effect |
+|---|---|
+| `skill` | Writes `~/.claude/skills/<name>/SKILL.md` with the content that was scanned |
+| `repo_clone` | Clones into `~/.self-learning-agent/staging/` — nothing in it is executed |
+| `package` | Installs with the allowlisted package manager |
+| `mcp_server` | Adds an entry to your MCP config, after backing it up |
+
+Every applied action is appended to the note's **Applied** section with its undo
+command.
+
+Worth knowing:
+
+- **`CAUTION` is the ordinary verdict.** SkillSpector does not return `SAFE` from a
+  static-only scan, even with zero findings.
+- **Omit `--no-llm` for decisions that matter.** Semantic analysis needs a provider
+  key (for example `SKILLSPECTOR_PROVIDER=openai` with `OPENAI_API_KEY`).
+- **A skill is refused if its staged copy changed after the scan**, or if anything
+  besides `SKILL.md` sits beside it. Run `sla apply` again to rescan.
+- **`--yes` skips the prompts.** Blocked proposals still never run.
+
 ## Design
 
 ```
@@ -200,8 +241,8 @@ That is the design working, not failing.
 Early — the most useful contribution right now is disagreement with
 [PLAN.md](PLAN.md). Open an issue.
 
-Once M1 lands, transcript fixtures for the test suite are the highest-value
-contribution, especially adversarial ones.
+Transcript fixtures for the test suite are the highest-value contribution —
+especially adversarial ones, and sources that break the assumptions in PLAN.md §19–§20.
 
 ## License
 
