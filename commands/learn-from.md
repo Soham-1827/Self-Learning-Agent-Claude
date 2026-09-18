@@ -9,5 +9,9 @@ Follow it exactly. Build the brief, classify the source, reconcile entity names
 against the description links, check against what is already installed, write
 the validated synthesis, and render the note.
 
-Stop after the note is written. Report the note path and a one-line summary of
-each proposal with its risk tier. Do not install anything.
+If the argument is a channel (`@handle` or a channel URL), follow the skill's
+**Channels** section: triage with `sla queue`, let me pick, process the picks one
+video at a time, then write a digest with `sla digest`.
+
+Stop after the note (or digest) is written. Report its path and a one-line summary
+of each proposal with its risk tier. Do not install anything.

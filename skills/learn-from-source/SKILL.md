@@ -13,8 +13,12 @@ approving. You do the judgment; the Python layer does everything deterministic.
 ### 1. Build the brief
 
 ```bash
-sla brief "<url-or-@handle>" --out /tmp/brief.json
+sla brief "<video-url>" --out /tmp/brief.json
 ```
+
+This is for **one video**. Given a channel (`@handle` or a channel URL), do not
+build a brief for it — `sla brief @handle` silently takes only the newest video.
+Follow **Channels** below instead.
 
 If `sla` is not on PATH, the project was not installed. Use the repo checkout
 instead — `PYTHONPATH=src python3 -m self_learning_agent.cli brief ...` — or install
@@ -78,6 +82,41 @@ sla apply "<same-ref>"
 
 It scans each proposal, then prompts per item. Do not run it on their behalf, and
 never pass `--yes` — the approval is the point of the whole design.
+
+## Channels: triage first, then one video at a time
+
+When the reference is a channel, the owner chooses what gets read. Never process
+a whole channel on your own initiative.
+
+1. **Triage.**
+
+   ```bash
+   sla queue "@handle" --last 10
+   ```
+
+   This reads metadata only — titles, dates, durations, chapters, GitHub links —
+   and never downloads a transcript. Videos already in the ledger are left out.
+
+2. **Show the owner the table and let them choose.** The default is the suggested
+   picks (marked `✓`, capped by `--cap`, 5 unless told otherwise). The class column
+   is a guess from metadata. Say so, and never drop a video because of the guess
+   without telling the owner.
+
+3. **Process each chosen video on its own**, in full, with the single-video
+   procedure above: a fresh brief, classify, reconcile, synthesise, `sla note`.
+   Keep one transcript in context at a time — render one note before building the
+   next brief. Several transcripts at once crowd out the reading each one needs.
+
+4. **Digest** the ones you processed:
+
+   ```bash
+   sla digest <id> <id> ...
+   ```
+
+   It links every note, quotes each thesis, and gathers the proposals by risk tier.
+
+5. **Stop**, as in step 6. Report the digest path and the proposals by risk tier.
+   Applying is still `sla apply`, one video at a time, run by the owner.
 
 ## Rules that are not style preferences
 
