@@ -12,11 +12,13 @@ from dataclasses import asdict
 from . import __version__, config as config_mod
 from .cache import Cache
 from .inventory import collect as collect_inventory
-from .ledger import Ledger
+from .ledger import Ledger, processed_ids
 from .apply import append_to_note, apply_decision, scan_target, stage_skill
 from .gate import BLOCK, CONFIRM, decide, requires_scan, summarise
 from .proposals import parse_all
+from .digest import write_digest
 from .synthesis import build_brief, parse_result
+from .triage import build_queue, format_table, to_dict as queue_to_dict
 from .vault import render, write_note
 from . import scanner as scanner_mod
 from .sources import YouTubeSource
@@ -253,6 +255,33 @@ def cmd_apply(args) -> int:
     return 0
 
 
+def cmd_queue(args) -> int:
+    """Triage a channel from metadata alone. Reads the ledger; writes nothing."""
+    cfg = config_mod.load()
+    source = YouTubeSource(cfg, Cache(cfg.cache_dir))
+    result = build_queue(
+        source,
+        args.ref,
+        last=args.last,
+        cap=args.cap,
+        processed=processed_ids(cfg.ledger_path, source.source_type),
+    )
+    if args.json:
+        print(json.dumps(queue_to_dict(result), ensure_ascii=False, indent=2))
+    else:
+        print(format_table(result))
+    return 0
+
+
+def cmd_digest(args) -> int:
+    cfg = config_mod.load()
+    path, missing = write_digest(args.sources, cfg, title=args.title)
+    print(f"digest written: {path}")
+    for source_id in missing:
+        print(f"skipped {source_id}: no note found — run `sla note` first", file=sys.stderr)
+    return 0
+
+
 def cmd_inventory(args) -> int:
     inv = collect_inventory()
     if args.against:
@@ -276,6 +305,20 @@ def cmd_status(args) -> int:
     for row in rows[:20]:
         print(f"  [{row['status']}] {row['source_id']}  {row['title'] or ''}")
     return 0
+
+
+def _positive_int(value: str) -> int:
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError("must be at least 1")
+    return number
+
+
+def _non_negative_int(value: str) -> int:
+    number = int(value)
+    if number < 0:
+        raise argparse.ArgumentTypeError("cannot be negative")
+    return number
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -309,6 +352,22 @@ def build_parser() -> argparse.ArgumentParser:
     apply_p.add_argument("--dry-run", action="store_true", help="decide but do nothing")
     apply_p.add_argument("--no-llm", action="store_true", help="static-only scanning")
     apply_p.set_defaults(func=cmd_apply)
+
+    queue = sub.add_parser(
+        "queue", help="triage a channel's latest videos from metadata alone"
+    )
+    queue.add_argument("ref", help="@handle or channel URL")
+    queue.add_argument("--last", type=_positive_int, default=10,
+                       help="how many of the channel's latest videos to consider")
+    queue.add_argument("--cap", type=_non_negative_int, default=5,
+                       help="how many to suggest picking")
+    queue.add_argument("--json", action="store_true", help="machine-readable output")
+    queue.set_defaults(func=cmd_queue)
+
+    digest = sub.add_parser("digest", help="write one note linking a batch of notes")
+    digest.add_argument("sources", nargs="+", help="video ids or URLs already noted")
+    digest.add_argument("--title", help="digest title (default: the shared channel)")
+    digest.set_defaults(func=cmd_digest)
 
     inventory = sub.add_parser("inventory", help="what is already installed here")
     inventory.add_argument(

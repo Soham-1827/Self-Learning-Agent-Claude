@@ -93,6 +93,19 @@ class YouTubeSource:
 
         return self._build(source_id, meta, captions)
 
+    def metadata(self, source_id: str, *, refresh: bool = False) -> dict:
+        """Metadata only — never captions. Cached exactly as `fetch` caches it.
+
+        Triage calls this for every candidate on a channel, so it has to stay
+        cheap: one yt-dlp metadata call per video, none on a cache hit, and no
+        transcript download at any point.
+        """
+        meta = None if refresh else self.cache.get(self.source_type, source_id, "meta")
+        if meta is None:
+            meta = self._fetch_metadata(source_id)
+            self.cache.put(self.source_type, source_id, "meta", meta)
+        return meta
+
     def _fetch_metadata(self, video_id: str) -> dict:
         url = f"https://www.youtube.com/watch?v={video_id}"
         raw = self._run(["--skip-download", "--dump-single-json", url])
@@ -176,6 +189,21 @@ class YouTubeSource:
 
 
 # -- pure helpers (unit-testable without the network) ----------------------
+
+
+def video_id_from_ref(ref: str) -> str | None:
+    """A video id from a bare id or any common video URL; None for anything else.
+
+    Pure — unlike `YouTubeSource.resolve`, it never shells out, so it is safe to
+    use where a reference only needs recognising, not resolving.
+    """
+    ref = (ref or "").strip()
+    if VIDEO_ID.match(ref):
+        return ref
+    for pattern in _URL_ID_PATTERNS:
+        if match := pattern.search(ref):
+            return match.group(1)
+    return None
 
 
 def parse_json3(payload: dict | None) -> tuple[TranscriptSegment, ...]:

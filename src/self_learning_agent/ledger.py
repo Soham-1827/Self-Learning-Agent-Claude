@@ -86,3 +86,30 @@ class Ledger:
                 "SELECT * FROM processed ORDER BY processed_at DESC"
             ).fetchall()
         return [dict(r) for r in rows]
+
+
+def read_rows(path: Path) -> list[dict]:
+    """Every ledger row, read without creating, migrating or writing the ledger.
+
+    Triage and digests only look. Opening through `Ledger` would create the file
+    and schema when absent, so this goes through a read-only SQLite URI instead.
+    """
+    path = Path(path)
+    if not path.exists():
+        return []
+    conn = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute("SELECT * FROM processed").fetchall()
+    except sqlite3.OperationalError:  # the file exists but holds no ledger table
+        return []
+    finally:
+        conn.close()
+    return [dict(r) for r in rows]
+
+
+def processed_ids(path: Path, source_type: str) -> frozenset[str]:
+    return frozenset(
+        row["source_id"] for row in read_rows(path) if row["source_type"] == source_type
+    )
+
