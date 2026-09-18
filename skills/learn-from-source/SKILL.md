@@ -33,9 +33,10 @@ skills, MCP servers and CLIs already installed.
 Decide `tooling`, `conceptual`, or `mixed`, and say why in `class_reasoning`.
 
 - **tooling** — demos repos, MCP servers, CLIs, skills, setup workflows.
-  Proposals are the payload; 1–2 project ideas.
+  Proposals are the payload; at most one or two project ideas.
 - **conceptual** — ideas, teardowns, interviews, strategy. Proposals are usually
-  empty and that is correct. Project ideas are the payload; give 3–5.
+  empty and that is correct. Project ideas are the payload — as many as pass
+  the bar in the rules below, often two to five, and zero is a valid answer.
 - **mixed** — both carry weight.
 
 ### 3. Reconcile entities — do not extract them

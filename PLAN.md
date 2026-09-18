@@ -185,7 +185,7 @@ the note carries the weight** — the same pipeline, two payoffs.
 | Class | What it looks like | Note emphasis |
 |---|---|---|
 | `tooling` | Demos a GitHub repo, an MCP server, a CLI, a Claude skill, a setup workflow | **Proposed actions** is the payload. 1–2 project ideas, brief |
-| `conceptual` | Business ideas, market teardowns, interviews, trends, strategy | Proposals are usually empty — and that is correct (I3). **Project ideas** is the payload: 3–5, developed |
+| `conceptual` | Business ideas, market teardowns, interviews, trends, strategy | Proposals are usually empty — and that is correct (I3). **Project ideas** is the payload: as many as pass §7.2 — often two to five, and zero is valid |
 | `mixed` | Teaches a tool *and* argues an idea | Both sections carry weight |
 
 The classifier is the agent, not a keyword matcher, and it records its reasoning in
@@ -350,7 +350,7 @@ self-learning-agent/
 | M2 | ✅ `sla inventory` → installed skills/MCPs/CLIs | Correctly lists the 224 local skills |
 | M3 | ✅ `/learn-from <url>` → note in vault + `proposals.json` | A `tooling` video yields proposals worth approving **and** a `conceptual` video yields ideas worth building |
 | M4 | ✅ Gate + `sla apply` | A `medium` proposal installs; a `high` one refuses and prints instructions; a generated skill goes repo → live via copy |
-| M5 | Channel batch: `/learn-from @GregIsenberg --last 5` | Dedupes against ledger, caps per-run cost |
+| M5 | ✅ Channel triage: `sla queue @handle` + `sla digest` | Dedupes against ledger, caps per-run cost |
 | M6 | Scheduled polling | Cron/daemon, digest note per run |
 | M7 | Frontend | Paste a link → same Python entrypoint |
 
@@ -766,3 +766,60 @@ activate anything other than what the scanner saw.
 week because the earlier rename used `str.replace`, which does nothing when the text
 has drifted. Edits to docs and code now go through an exact-match helper that fails
 when a target is not found exactly once.
+
+---
+
+## 22. Field notes: M5, built in parallel (2026-09-18)
+
+M5 and a test-hardening pass were built at the same time by two agents, each in its own
+git worktree on its own branch, then merged. **Zero conflicts, 278 tests on first merge.**
+
+What made that work was choosing the second task for *disjoint files* and writing the
+ownership into each brief. The M5 agent could add to `youtube.py` but not change anything
+the test agent was testing; neither could touch `conftest.py`, existing tests or docs.
+Docs were left for one pass after both merges, since that is where two branches would
+otherwise collide. Both worktrees lived on the Linux filesystem rather than `D:` — the
+suite ran in 0.26s there against 3.3s on the DrvFs mount.
+
+**Found, not fixed.** The test agent hit a real bug and marked it
+`xfail(strict=True)` instead of changing `src/`: `_run` kept the *first* 400 characters of
+stderr, but yt-dlp prints its `ERROR:` line last, after notices such as the Python 3.10
+deprecation — so a failed fetch reported the deprecation rather than the cause. Fixed on
+main after both merges. Strictness is what made that safe: the fix turns the xfail into an
+unexpected pass, which fails the run until the marker is removed, so the two cannot drift
+apart.
+
+### Triage
+
+- `sla queue` reads metadata only; a test asserts captions are never fetched.
+- The ledger is read through a read-only SQLite URI, because opening it normally creates
+  it. Verified against the real ledger: the already-processed video was filtered out and
+  the ledger file's mtime did not change.
+- The class guess is weak at the margin. *"GPT-6 Astra: How I'd Make Money With It"*
+  guessed `tooling` from two tool words in its description. It is labelled a guess
+  everywhere, and the owner picks.
+
+### The first real approval found three bugs
+
+Approving `p1` — the first `y` ever given to the gate — worked. The skill installed with
+mode 0644 from a 0777 source, byte-identical to what was scanned, and Claude Code listed it
+immediately. It also exposed:
+
+| Bug | Cause | Fix |
+|---|---|---|
+| The prompt crashed under Claude Code's `!` | `input()` raised `EOFError` | End of input is "no" for everything left, with instructions |
+| The ledger lost the video's title | A status update upserted `title = NULL` | Fields not supplied keep their stored value |
+| The video showed `applied` with `p2` never seen | Status considered only proposals attempted in that run | The store remembers applied ids; `applied` only when nothing automatable waits; applied proposals are not re-offered |
+
+The real ledger was backed up, then repaired: title restored, status `partial`.
+
+### Another silent `str.replace`
+
+§19 meant to remove the "3–5 project ideas" quota from §7.1. It searched for `3-5` with a
+hyphen; the file has an en-dash, so nothing changed — and the skill's step 2 still said
+"give 3–5". Both were live instructions to pad for a week after the rule saying zero is
+valid, the exact failure §19 was written to prevent. Now fixed with the exact-match helper.
+
+The lesson generalises Rule 9: an edit made with a silent replace is unverified, *including
+the old ones*. Grep for the intended result, not just for the absence of an error.
+

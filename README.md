@@ -2,11 +2,12 @@
 
 **Point your coding agent at a video. Get a note you'll keep, and a setup you approved.**
 
-> **Status: v1 complete.** `/learn-from <url>` produces a vault note with validated
-> proposals, and `sla apply` reviews them one at a time behind a SkillSpector scan.
-> Nothing is ever applied without you saying yes. 178 tests, 83% coverage, CI on
-> Python 3.10–3.13. Architecture is in [PLAN.md](PLAN.md); to pick the work up cold,
-> read [HANDOVER.md](HANDOVER.md).
+> **Status: v1 complete, plus channel triage (M5).** `/learn-from <url>` produces a
+> vault note with validated proposals; `/learn-from @channel` triages a creator's
+> latest uploads for you to pick from; `sla apply` reviews proposals one at a time
+> behind a SkillSpector scan. Nothing is ever applied without you saying yes.
+> 284 tests, 91% coverage, CI on Python 3.10–3.13. Architecture is in
+> [PLAN.md](PLAN.md); to pick the work up cold, read [HANDOVER.md](HANDOVER.md).
 
 ---
 
@@ -27,14 +28,16 @@ This turns that firehose into two things you can use: **a note in your vault**, 
 
 ```bash
 /learn-from https://youtube.com/watch?v=...   # one video
-/learn-from @GregIsenberg                     # a channel's latest
+/learn-from @GregIsenberg                     # a channel: triage, you pick, one digest
 ```
 
 Or from a shell:
 
 ```bash
-sla brief "<url>" --out brief.json   # gather
-sla note  "<url>" --synthesis s.json # render the note
+sla queue "@handle" --last 10        # triage a channel from metadata only
+sla brief "<url>" --out brief.json   # gather one video
+sla note  "<url>" --synthesis s.json # render its note
+sla digest <id> <id> ...             # one note linking a processed batch
 sla apply "<url>"                    # review proposals, one at a time
 ```
 
@@ -179,6 +182,32 @@ Worth knowing:
 - **A skill is refused if its staged copy changed after the scan**, or if anything
   besides `SKILL.md` sits beside it. Run `sla apply` again to rescan.
 - **`--yes` skips the prompts.** Blocked proposals still never run.
+- **Applied proposals are not offered again**, and a video only shows as `applied`
+  once nothing automatable is still waiting — otherwise it is `partial`.
+
+## Working through a channel
+
+```bash
+sla queue "@GregIsenberg" --last 10
+```
+
+Triage reads metadata only — titles, dates, chapters, links in the description — and
+never downloads a transcript. Videos you have already processed are left out. A real
+run:
+
+```
+pick  #  id           published   min  ch  gh  ~words  guess              title
+✓     1  _LCeJZFIsd4  2026-09-14   31  10   0   4,722  likely tooling     Building a Software Factory that actually works (Fu…
+✓     2  nglqTHwuZ-8  2026-09-10   23   7   0   3,430  likely tooling     GPT-6 Astra: How I'd Make Money With It
+✓     3  mUAsaprJ66s  2026-09-15   28   9   0   4,125  likely conceptual  Instinct AI is For Real. What You Need to Know.
+✓     4  UtFo1ZNC2ns  2026-09-08   39  18   0   5,815  likely conceptual  I'm Obsessed With Local AI. Here's Why
+```
+
+The class column is a guess from metadata; each video is classified for real when it
+is read. You choose what gets processed — `/learn-from @handle` shows this table and
+waits — and each pick then goes through the single-video flow on its own, one
+transcript at a time. `sla digest` finishes with one note that links the batch and
+gathers every proposal by risk tier.
 
 ## Design
 
@@ -208,7 +237,7 @@ security model enforceable.
 | M2 | Inventory of installed skills/MCPs | ✅ |
 | M3 | `/learn-from` → vault note + proposals | ✅ |
 | M4 | Approval gate + apply | ✅ |
-| M5 | Channel batch processing | |
+| M5 | Channel triage + digest | ✅ |
 | M6 | Scheduled polling | |
 | M7 | Web frontend — paste any link | |
 
