@@ -1,0 +1,1154 @@
+{
+ "_quality": "auto_captions",
+ "events": [
+  {
+   "tStartMs": 0,
+   "segs": [
+    {
+     "utf8": "Chuck,"
+    },
+    {
+     "utf8": " guess"
+    },
+    {
+     "utf8": " what?"
+    }
+   ]
+  },
+  {
+   "tStartMs": 2200,
+   "segs": [
+    {
+     "utf8": ">> I"
+    },
+    {
+     "utf8": " should"
+    },
+    {
+     "utf8": " have"
+    },
+    {
+     "utf8": " said"
+    },
+    {
+     "utf8": " chicken"
+    },
+    {
+     "utf8": " butt"
+    },
+    {
+     "utf8": " then."
+    }
+   ]
+  },
+  {
+   "tStartMs": 5520,
+   "segs": [
+    {
+     "utf8": ">> Is that"
+    },
+    {
+     "utf8": " joke"
+    },
+    {
+     "utf8": " coming"
+    },
+    {
+     "utf8": " out"
+    },
+    {
+     "utf8": " of"
+    },
+    {
+     "utf8": " you?"
+    }
+   ]
+  },
+  {
+   "tStartMs": 9280,
+   "segs": [
+    {
+     "utf8": "to"
+    },
+    {
+     "utf8": " be"
+    },
+    {
+     "utf8": " chicken"
+    },
+    {
+     "utf8": " butt"
+    },
+    {
+     "utf8": " in"
+    },
+    {
+     "utf8": " your"
+    },
+    {
+     "utf8": " jokes."
+    }
+   ]
+  },
+  {
+   "tStartMs": 14410,
+   "segs": [
+    {
+     "utf8": "[laughter]"
+    }
+   ]
+  },
+  {
+   "tStartMs": 20160,
+   "segs": [
+    {
+     "utf8": ">> So,"
+    },
+    {
+     "utf8": " this"
+    },
+    {
+     "utf8": " one"
+    },
+    {
+     "utf8": " I"
+    },
+    {
+     "utf8": " thought"
+    },
+    {
+     "utf8": " I'm"
+    },
+    {
+     "utf8": " long"
+    },
+    {
+     "utf8": " overdue"
+    }
+   ]
+  },
+  {
+   "tStartMs": 28040,
+   "segs": [
+    {
+     "utf8": "on"
+    },
+    {
+     "utf8": " the"
+    },
+    {
+     "utf8": " periodic"
+    },
+    {
+     "utf8": " table"
+    },
+    {
+     "utf8": " of"
+    },
+    {
+     "utf8": " the"
+    },
+    {
+     "utf8": " elements."
+    }
+   ]
+  },
+  {
+   "tStartMs": 34080,
+   "segs": [
+    {
+     "utf8": "SCIENCE."
+    },
+    {
+     "utf8": " IT'S"
+    },
+    {
+     "utf8": " A"
+    },
+    {
+     "utf8": " SCIENCE"
+    },
+    {
+     "utf8": " THING."
+    }
+   ]
+  },
+  {
+   "tStartMs": 38080,
+   "segs": [
+    {
+     "utf8": "table"
+    },
+    {
+     "utf8": " of"
+    },
+    {
+     "utf8": " element"
+    },
+    {
+     "utf8": " tie,"
+    },
+    {
+     "utf8": " please?"
+    },
+    {
+     "utf8": " Here"
+    },
+    {
+     "utf8": " we"
+    }
+   ]
+  },
+  {
+   "tStartMs": 42480,
+   "segs": [
+    {
+     "utf8": ">> So,"
+    },
+    {
+     "utf8": " I'm"
+    },
+    {
+     "utf8": " not"
+    },
+    {
+     "utf8": " going"
+    },
+    {
+     "utf8": " to"
+    },
+    {
+     "utf8": " tell"
+    },
+    {
+     "utf8": " you"
+    },
+    {
+     "utf8": " everything"
+    }
+   ]
+  },
+  {
+   "tStartMs": 49360,
+   "segs": [
+    {
+     "utf8": "interesting."
+    }
+   ]
+  },
+  {
+   "tStartMs": 52440,
+   "segs": [
+    {
+     "utf8": "just"
+    },
+    {
+     "utf8": " the"
+    },
+    {
+     "utf8": " stuff"
+    },
+    {
+     "utf8": " that"
+    },
+    {
+     "utf8": " I"
+    },
+    {
+     "utf8": " find"
+    },
+    {
+     "utf8": " interesting"
+    }
+   ]
+  },
+  {
+   "tStartMs": 59400,
+   "segs": [
+    {
+     "utf8": ">> All"
+    },
+    {
+     "utf8": " right."
+    }
+   ]
+  },
+  {
+   "tStartMs": 68040,
+   "segs": [
+    {
+     "utf8": "Didn't"
+    },
+    {
+     "utf8": " have"
+    },
+    {
+     "utf8": " a"
+    },
+    {
+     "utf8": " lot"
+    },
+    {
+     "utf8": " to"
+    },
+    {
+     "utf8": " remember"
+    },
+    {
+     "utf8": " [laughter]"
+    }
+   ]
+  },
+  {
+   "tStartMs": 79910,
+   "segs": [
+    {
+     "utf8": ">> [laughter]"
+    }
+   ]
+  },
+  {
+   "tStartMs": 93360,
+   "segs": [
+    {
+     "utf8": "the"
+    },
+    {
+     "utf8": " world."
+    },
+    {
+     "utf8": " This"
+    },
+    {
+     "utf8": " is"
+    },
+    {
+     "utf8": " what"
+    },
+    {
+     "utf8": " the"
+    },
+    {
+     "utf8": " whole"
+    },
+    {
+     "utf8": " world"
+    }
+   ]
+  },
+  {
+   "tStartMs": 111720,
+   "segs": [
+    {
+     "utf8": "they"
+    },
+    {
+     "utf8": " suggested,"
+    },
+    {
+     "utf8": " suspected"
+    },
+    {
+     "utf8": " that"
+    },
+    {
+     "utf8": " such"
+    },
+    {
+     "utf8": " a"
+    }
+   ]
+  },
+  {
+   "tStartMs": 126560,
+   "segs": [
+    {
+     "utf8": ">> In"
+    },
+    {
+     "utf8": " Greek?"
+    }
+   ]
+  },
+  {
+   "tStartMs": 131800,
+   "segs": [
+    {
+     "utf8": ">> The"
+    },
+    {
+     "utf8": " atom."
+    }
+   ]
+  },
+  {
+   "tStartMs": 142040,
+   "segs": [
+    {
+     "utf8": "You"
+    },
+    {
+     "utf8": " can."
+    }
+   ]
+  },
+  {
+   "tStartMs": 150480,
+   "segs": [
+    {
+     "utf8": "so,"
+    },
+    {
+     "utf8": " then"
+    },
+    {
+     "utf8": " you"
+    },
+    {
+     "utf8": " have"
+    },
+    {
+     "utf8": " these"
+    },
+    {
+     "utf8": " material"
+    }
+   ]
+  },
+  {
+   "tStartMs": 163360,
+   "segs": [
+    {
+     "utf8": ">> The"
+    },
+    {
+     "utf8": " alchemists."
+    }
+   ]
+  },
+  {
+   "tStartMs": 176120,
+   "segs": [
+    {
+     "utf8": "on"
+    },
+    {
+     "utf8": " the"
+    },
+    {
+     "utf8": " wrong"
+    },
+    {
+     "utf8": " horse,"
+    },
+    {
+     "utf8": " but"
+    },
+    {
+     "utf8": " they"
+    },
+    {
+     "utf8": " kept"
+    },
+    {
+     "utf8": " good"
+    }
+   ]
+  },
+  {
+   "tStartMs": 190440,
+   "segs": [
+    {
+     "utf8": "nature"
+    },
+    {
+     "utf8": " gave"
+    },
+    {
+     "utf8": " you."
+    },
+    {
+     "utf8": " So,"
+    },
+    {
+     "utf8": " in"
+    },
+    {
+     "utf8": " other"
+    },
+    {
+     "utf8": " words,"
+    }
+   ]
+  },
+  {
+   "tStartMs": 202920,
+   "segs": [
+    {
+     "utf8": "and"
+    },
+    {
+     "utf8": " weigh"
+    },
+    {
+     "utf8": " it."
+    },
+    {
+     "utf8": " Write"
+    },
+    {
+     "utf8": " down"
+    },
+    {
+     "utf8": " that"
+    },
+    {
+     "utf8": " number."
+    }
+   ]
+  },
+  {
+   "tStartMs": 216600,
+   "segs": [
+    {
+     "utf8": ">> Right."
+    }
+   ]
+  },
+  {
+   "tStartMs": 234240,
+   "segs": [
+    {
+     "utf8": "there"
+    },
+    {
+     "utf8": " and"
+    },
+    {
+     "utf8": " you"
+    },
+    {
+     "utf8": " can"
+    },
+    {
+     "utf8": " weigh"
+    },
+    {
+     "utf8": " it."
+    },
+    {
+     "utf8": " And"
+    },
+    {
+     "utf8": " a"
+    },
+    {
+     "utf8": " log"
+    }
+   ]
+  },
+  {
+   "tStartMs": 251959,
+   "segs": [
+    {
+     "utf8": ">> You"
+    },
+    {
+     "utf8": " turn"
+    },
+    {
+     "utf8": " it"
+    },
+    {
+     "utf8": " from"
+    },
+    {
+     "utf8": " one"
+    },
+    {
+     "utf8": " thing"
+    },
+    {
+     "utf8": " into"
+    },
+    {
+     "utf8": " another."
+    }
+   ]
+  },
+  {
+   "tStartMs": 263080,
+   "segs": [
+    {
+     "utf8": ">> So"
+    },
+    {
+     "utf8": " that"
+    },
+    {
+     "utf8": " helped"
+    },
+    {
+     "utf8": " people"
+    },
+    {
+     "utf8": " understand"
+    },
+    {
+     "utf8": " some"
+    },
+    {
+     "utf8": " of"
+    }
+   ]
+  },
+  {
+   "tStartMs": 286560,
+   "segs": [
+    {
+     "utf8": "that"
+    },
+    {
+     "utf8": " some"
+    },
+    {
+     "utf8": " substances"
+    }
+   ]
+  },
+  {
+   "tStartMs": 303040,
+   "segs": [
+    {
+     "utf8": ">> At"
+    },
+    {
+     "utf8": " room"
+    },
+    {
+     "utf8": " temperature,"
+    },
+    {
+     "utf8": " it"
+    },
+    {
+     "utf8": " is"
+    },
+    {
+     "utf8": " liquid."
+    }
+   ]
+  },
+  {
+   "tStartMs": 317120,
+   "segs": [
+    {
+     "utf8": ">> If"
+    },
+    {
+     "utf8": " these"
+    },
+    {
+     "utf8": " are"
+    },
+    {
+     "utf8": " fundamental"
+    },
+    {
+     "utf8": " elements,"
+    }
+   ]
+  },
+  {
+   "tStartMs": 343880,
+   "segs": [
+    {
+     "utf8": "to"
+    },
+    {
+     "utf8": " be"
+    },
+    {
+     "utf8": " confused"
+    },
+    {
+     "utf8": " with"
+    },
+    {
+     "utf8": " the"
+    },
+    {
+     "utf8": " Russian"
+    },
+    {
+     "utf8": " botanist"
+    }
+   ]
+  },
+  {
+   "tStartMs": 365160,
+   "segs": [
+    {
+     "utf8": "something"
+    },
+    {
+     "utf8": " else."
+    },
+    {
+     "utf8": " With"
+    },
+    {
+     "utf8": " something"
+    },
+    {
+     "utf8": " else."
+    }
+   ]
+  },
+  {
+   "tStartMs": 379880,
+   "segs": [
+    {
+     "utf8": ">> Lavoisier."
+    }
+   ]
+  },
+  {
+   "tStartMs": 399000,
+   "segs": [
+    {
+     "utf8": "dangerous"
+    },
+    {
+     "utf8": " operation"
+    },
+    {
+     "utf8": " if"
+    },
+    {
+     "utf8": " you're"
+    },
+    {
+     "utf8": " smoking"
+    },
+    {
+     "utf8": " a"
+    }
+   ]
+  },
+  {
+   "tStartMs": 419400,
+   "segs": [
+    {
+     "utf8": ">> Oh."
+    }
+   ]
+  },
+  {
+   "tStartMs": 429760,
+   "segs": [
+    {
+     "utf8": ">> And"
+    },
+    {
+     "utf8": " that"
+    },
+    {
+     "utf8": " That's"
+    },
+    {
+     "utf8": " one"
+    },
+    {
+     "utf8": " of"
+    },
+    {
+     "utf8": " the"
+    },
+    {
+     "utf8": " active"
+    }
+   ]
+  },
+  {
+   "tStartMs": 451840,
+   "segs": [
+    {
+     "utf8": "elements"
+    },
+    {
+     "utf8": " that"
+    },
+    {
+     "utf8": " had"
+    },
+    {
+     "utf8": " similar"
+    },
+    {
+     "utf8": " behavior."
+    }
+   ]
+  },
+  {
+   "tStartMs": 464560,
+   "segs": [
+    {
+     "utf8": "we"
+    },
+    {
+     "utf8": " found"
+    },
+    {
+     "utf8": " these"
+    },
+    {
+     "utf8": " gases"
+    }
+   ]
+  },
+  {
+   "tStartMs": 486240,
+   "segs": [
+    {
+     "utf8": "manipulate"
+    },
+    {
+     "utf8": " them"
+    }
+   ]
+  },
+  {
+   "tStartMs": 499240,
+   "segs": [
+    {
+     "utf8": ">> To to"
+    },
+    {
+     "utf8": " isolate."
+    }
+   ]
+  },
+  {
+   "tStartMs": 524760,
+   "segs": [
+    {
+     "utf8": ">> And"
+    },
+    {
+     "utf8": " they"
+    },
+    {
+     "utf8": " called"
+    },
+    {
+     "utf8": " them"
+    }
+   ]
+  },
+  {
+   "tStartMs": 545440,
+   "segs": [
+    {
+     "utf8": "Great"
+    },
+    {
+     "utf8": " Britain"
+    },
+    {
+     "utf8": " to"
+    },
+    {
+     "utf8": " make"
+    },
+    {
+     "utf8": " our"
+    },
+    {
+     "utf8": " own"
+    },
+    {
+     "utf8": " damn"
+    }
+   ]
+  },
+  {
+   "tStartMs": 562800,
+   "segs": [
+    {
+     "utf8": "so"
+    },
+    {
+     "utf8": " you"
+    },
+    {
+     "utf8": " look"
+    },
+    {
+     "utf8": " at"
+    },
+    {
+     "utf8": " the"
+    },
+    {
+     "utf8": " discovery"
+    },
+    {
+     "utf8": " dates"
+    },
+    {
+     "utf8": " of"
+    }
+   ]
+  },
+  {
+   "tStartMs": 575096,
+   "segs": [
+    {
+     "utf8": ">> [laughter]"
+    }
+   ]
+  },
+  {
+   "tStartMs": 591640,
+   "segs": [
+    {
+     "utf8": ">> That's"
+    },
+    {
+     "utf8": " cool."
+    }
+   ]
+  },
+  {
+   "tStartMs": 602400,
+   "segs": [
+    {
+     "utf8": "also"
+    },
+    {
+     "utf8": " know?"
+    }
+   ]
+  },
+  {
+   "tStartMs": 617600,
+   "segs": [
+    {
+     "utf8": "similar"
+    }
+   ]
+  },
+  {
+   "tStartMs": 658760,
+   "segs": [
+    {
+     "utf8": "and"
+    },
+    {
+     "utf8": " saying,"
+    },
+    {
+     "utf8": " \"Wait"
+    },
+    {
+     "utf8": " a"
+    },
+    {
+     "utf8": " minute,"
+    },
+    {
+     "utf8": " I"
+    },
+    {
+     "utf8": " can't"
+    },
+    {
+     "utf8": " see"
+    }
+   ]
+  },
+  {
+   "tStartMs": 698440,
+   "segs": [
+    {
+     "utf8": ">> We"
+    },
+    {
+     "utf8": " don't"
+    },
+    {
+     "utf8": " know"
+    },
+    {
+     "utf8": " it's"
+    },
+    {
+     "utf8": " a"
+    },
+    {
+     "utf8": " shell"
+    },
+    {
+     "utf8": " yet."
+    }
+   ]
+  },
+  {
+   "tStartMs": 736200,
+   "segs": [
+    {
+     "utf8": "are"
+    },
+    {
+     "utf8": " available?"
+    }
+   ]
+  },
+  {
+   "tStartMs": 785920,
+   "segs": [
+    {
+     "utf8": "for"
+    },
+    {
+     "utf8": " these"
+    },
+    {
+     "utf8": " energy"
+    },
+    {
+     "utf8": " fields"
+    },
+    {
+     "utf8": " and"
+    },
+    {
+     "utf8": " you"
+    },
+    {
+     "utf8": " uncover"
+    }
+   ]
+  },
+  {
+   "tStartMs": 833840,
+   "segs": [
+    {
+     "utf8": ">> Except"
+    },
+    {
+     "utf8": " you"
+    },
+    {
+     "utf8": " have"
+    },
+    {
+     "utf8": " a"
+    },
+    {
+     "utf8": " farther"
+    },
+    {
+     "utf8": " outer"
+    },
+    {
+     "utf8": " shell."
+    }
+   ]
+  },
+  {
+   "tStartMs": 880240,
+   "segs": [
+    {
+     "utf8": ">> Keep"
+    },
+    {
+     "utf8": " them"
+    },
+    {
+     "utf8": " at"
+    },
+    {
+     "utf8": " the"
+    },
+    {
+     "utf8": " gate."
+    }
+   ]
+  },
+  {
+   "tStartMs": 926640,
+   "segs": [
+    {
+     "utf8": "could,"
+    },
+    {
+     "utf8": " if"
+    },
+    {
+     "utf8": " you"
+    },
+    {
+     "utf8": " wanted,"
+    },
+    {
+     "utf8": " just"
+    },
+    {
+     "utf8": " have"
+    },
+    {
+     "utf8": " the"
+    }
+   ]
+  },
+  {
+   "tStartMs": 959320,
+   "segs": [
+    {
+     "utf8": ">> Yeah."
+    }
+   ]
+  },
+  {
+   "tStartMs": 1001440,
+   "segs": [
+    {
+     "utf8": ">> Right."
+    }
+   ]
+  },
+  {
+   "tStartMs": 1039640,
+   "segs": [
+    {
+     "utf8": ">> 118"
+    }
+   ]
+  },
+  {
+   "tStartMs": 1074840,
+   "segs": [
+    {
+     "utf8": "you're"
+    },
+    {
+     "utf8": " putting"
+    },
+    {
+     "utf8": " a"
+    },
+    {
+     "utf8": " bunch"
+    },
+    {
+     "utf8": " OF"
+    },
+    {
+     "utf8": " PROTONS"
+    }
+   ]
+  }
+ ]
+}
