@@ -66,9 +66,11 @@ class Ledger:
                 " (source_type, source_id, title, url, processed_at, note_path, status)"
                 " VALUES (?,?,?,?,?,?,?)"
                 " ON CONFLICT(source_type, source_id) DO UPDATE SET"
-                "   title=excluded.title, url=excluded.url,"
+                "   title=COALESCE(excluded.title, processed.title),"
+                "   url=COALESCE(excluded.url, processed.url),"
                 "   processed_at=excluded.processed_at,"
-                "   note_path=excluded.note_path, status=excluded.status",
+                "   note_path=COALESCE(excluded.note_path, processed.note_path),"
+                "   status=excluded.status",
                 (
                     source_type,
                     source_id,

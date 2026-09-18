@@ -155,7 +155,7 @@ class YouTubeSource:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
         if proc.returncode != 0:
             raise YouTubeError(
-                f"yt-dlp failed ({proc.returncode}): {proc.stderr.strip()[:400]}"
+                f"yt-dlp failed ({proc.returncode}): {_error_summary(proc.stderr)}"
             )
         return proc.stdout
 
@@ -204,6 +204,18 @@ def video_id_from_ref(ref: str) -> str | None:
         if match := pattern.search(ref):
             return match.group(1)
     return None
+
+
+def _error_summary(stderr: str | None, limit: int = 400) -> str:
+    """The part of yt-dlp's stderr that says what actually went wrong.
+
+    yt-dlp prints warnings and notices first — the Python 3.10 deprecation among
+    them — and its ERROR line last, so the head of stderr is its least useful part.
+    """
+    lines = [line.strip() for line in (stderr or "").splitlines() if line.strip()]
+    errors = [line for line in lines if line.startswith("ERROR")]
+    summary = errors[-1] if errors else (lines[-1] if lines else "no output")
+    return summary[-limit:]
 
 
 def parse_json3(payload: dict | None) -> tuple[TranscriptSegment, ...]:

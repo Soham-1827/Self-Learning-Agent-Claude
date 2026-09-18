@@ -97,11 +97,6 @@ def test_run_failure_detail_is_bounded(source, monkeypatch):
     assert len(str(excinfo.value)) < 500
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "_run keeps the FIRST 400 chars of stderr; yt-dlp prints its ERROR line last, "
-    "after warnings and notices such as the Python 3.10 deprecation, so the real "
-    "cause is cut off whenever stderr is long"
-))
 def test_run_failure_keeps_the_final_error_line_when_stderr_is_long(source, monkeypatch):
     noisy = "WARNING: some notice about the extractor\n" * 30
     _install(monkeypatch, lambda cmd: _Proc(

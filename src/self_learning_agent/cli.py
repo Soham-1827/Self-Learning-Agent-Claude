@@ -15,7 +15,7 @@ from .inventory import collect as collect_inventory
 from .ledger import Ledger, processed_ids
 from .apply import append_to_note, apply_decision, scan_target, stage_skill
 from .gate import BLOCK, CONFIRM, decide, requires_scan, summarise
-from .proposals import parse_all
+from .proposals import Risk, parse_all
 from .digest import write_digest
 from .synthesis import build_brief, parse_result
 from .triage import build_queue, format_table, to_dict as queue_to_dict
@@ -159,6 +159,19 @@ def _describe(decision) -> None:
         print(f"          - {reason}")
 
 
+def _apply_status(proposals, applied: set[str]) -> str:
+    """Ledger status after an apply run.
+
+    "applied" only once nothing automatable is still waiting for a decision.
+    High-risk proposals never run through the gate — the owner runs them by
+    hand — so they are not counted as waiting.
+    """
+    if not applied:
+        return "pending-review"
+    waiting = [p for p in proposals if p.risk != Risk.HIGH and p.id not in applied]
+    return "partial" if waiting else "applied"
+
+
 def cmd_apply(args) -> int:
     cfg = config_mod.load()
     repo_root = Path(__file__).resolve().parents[2]
@@ -175,6 +188,15 @@ def cmd_apply(args) -> int:
     proposals, rejected = parse_all(saved.get("proposals"))
     for item in rejected:
         print(f"rejected: {item}", file=sys.stderr)
+
+    # Proposals already carried out are not offered again. The store remembers
+    # them, so the ledger status can tell "done" from "some still waiting".
+    all_proposals = list(proposals)
+    already = set(saved.get("applied") or [])
+    for proposal in proposals:
+        if proposal.id in already:
+            print(f"already applied: {proposal.id}  {proposal.title}")
+    proposals = [p for p in proposals if p.id not in already]
     if args.only:
         wanted = {i.strip() for i in args.only.split(",")}
         proposals = [p for p in proposals if p.id in wanted]
@@ -230,8 +252,15 @@ def cmd_apply(args) -> int:
         if decision.action == BLOCK:
             continue
         if not args.yes:
-            answer = input(f"\napply {decision.proposal.id} "
-                           f"({decision.proposal.title})? [y/N] ").strip().lower()
+            try:
+                answer = input(f"\napply {decision.proposal.id} "
+                               f"({decision.proposal.title})? [y/N] ").strip().lower()
+            except EOFError:
+                # No keyboard attached: a pipe, or Claude Code's `!` prefix. Treat
+                # it as "no" for everything left, and say how to answer instead.
+                print("\n  no terminal to answer from — nothing further applied.\n"
+                      "  Run this in a terminal, or pass --yes to approve up front.")
+                break
             if answer not in ("y", "yes"):
                 print("  skipped")
                 continue
@@ -245,11 +274,15 @@ def cmd_apply(args) -> int:
         note_path = saved.get("note_path")
         if note_path:
             append_to_note(Path(note_path), records)
-        ledger = Ledger(cfg.ledger_path)
-        ledger.record(
+
+        applied = already | {r.proposal_id for r in records if r.ok}
+        saved["applied"] = sorted(applied)
+        store.write_text(json.dumps(saved, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        Ledger(cfg.ledger_path).record(
             "youtube", source_id,
             note_path=note_path,
-            status="applied" if all(r.ok for r in records) else "partial",
+            status=_apply_status(all_proposals, applied),
         )
         print(f"\nrecorded {len(records)} action(s) in the note")
     return 0

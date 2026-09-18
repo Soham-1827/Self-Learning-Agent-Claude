@@ -180,3 +180,110 @@ def test_a_real_run_scans_a_scratch_copy_not_the_repo(tmp_path, monkeypatch):
     assert seen["mode"] & 0o111 == 0                  # the scanned copy is never executable
     assert not seen["target"].exists()                # scratch cleaned up
 
+
+def test_no_terminal_to_answer_is_a_no_not_a_crash(tmp_path, monkeypatch, capsys):
+    """Claude Code's `!` prefix gives no keyboard; the prompt used to crash on EOF."""
+    _apply_harness(tmp_path, monkeypatch, "eof-probe")
+
+    def no_keyboard(prompt=""):
+        raise EOFError
+
+    applied = []
+    monkeypatch.setattr("builtins.input", no_keyboard)
+    monkeypatch.setattr(cli, "apply_decision", lambda *a, **k: applied.append(a))
+    args = cli.build_parser().parse_args(["apply", "https://youtu.be/abc12345678"])
+
+    assert cli.cmd_apply(args) == 0
+    assert applied == []
+    assert "--yes" in capsys.readouterr().out
+
+
+def _multi_harness(tmp_path, monkeypatch):
+    """Three proposals — skill, clone, manual — with applies faked and counted."""
+    from self_learning_agent.apply import AppliedRecord
+    from self_learning_agent.ledger import Ledger
+    from self_learning_agent.scanner import ScanVerdict
+
+    cfg = Config(home=tmp_path / "home")
+    store = cfg.home / "proposals" / "abc12345678.json"
+    store.parent.mkdir(parents=True)
+    store.write_text(json.dumps({
+        "source_id": "abc12345678",
+        "note_path": None,
+        "proposals": [
+            {"id": "p1", "kind": "skill", "title": "a skill",
+             "action": {"name": "multi-probe", "content": "# x"}},
+            {"id": "p2", "kind": "repo_clone", "title": "a clone",
+             "action": {"repo": "a/b"}},
+            {"id": "p3", "kind": "manual", "title": "by hand",
+             "action": {"detail": "d"}},
+        ],
+    }), encoding="utf-8")
+    Ledger(cfg.ledger_path).record("youtube", "abc12345678", title="The title")
+    monkeypatch.setattr(cli.config_mod, "load", lambda: cfg)
+
+    class _Source:
+        source_type = "youtube"
+
+        def __init__(self, *a, **k):
+            pass
+
+        def resolve(self, ref, limit=1):
+            return ["abc12345678"]
+
+    repo_root = Path(cli.__file__).resolve().parents[2]
+    real_stage = cli.stage_skill
+    monkeypatch.setattr(cli, "YouTubeSource", _Source)
+    monkeypatch.setattr(cli, "stage_skill", lambda p, root: real_stage(
+        p, tmp_path / "repo" if Path(root) == repo_root else root))
+    monkeypatch.setattr(cli.scanner_mod, "available", lambda: True)
+    monkeypatch.setattr(cli.scanner_mod, "scan", lambda target, use_llm=True: ScanVerdict(
+        str(target), 0, "LOW", "CAUTION", (), False, True))
+
+    calls = []
+
+    def fake_apply(decision, cfg_, repo):
+        calls.append(decision.proposal.id)
+        return AppliedRecord(decision.proposal.id, decision.proposal.title, True, "done")
+
+    monkeypatch.setattr(cli, "apply_decision", fake_apply)
+    return cfg, store, calls
+
+
+def _run_apply(*extra):
+    args = cli.build_parser().parse_args(["apply", "https://youtu.be/abc12345678", *extra])
+    assert cli.cmd_apply(args) == 0
+
+
+def test_status_stays_partial_while_another_proposal_awaits_review(tmp_path, monkeypatch):
+    """Approving p1 alone used to mark the whole video "applied" with p2 never seen."""
+    from self_learning_agent.ledger import Ledger
+
+    cfg, store, _ = _multi_harness(tmp_path, monkeypatch)
+    _run_apply("--only", "p1", "--yes")
+
+    row = Ledger(cfg.ledger_path).all()[0]
+    assert row["status"] == "partial"
+    assert row["title"] == "The title"            # the update no longer erases it
+    assert json.loads(store.read_text())["applied"] == ["p1"]
+
+
+def test_status_is_applied_once_nothing_automatable_is_waiting(tmp_path, monkeypatch):
+    from self_learning_agent.ledger import Ledger
+
+    cfg, _, _ = _multi_harness(tmp_path, monkeypatch)
+    _run_apply("--only", "p1,p2", "--yes")          # p3 is manual: never waiting
+    assert Ledger(cfg.ledger_path).all()[0]["status"] == "applied"
+
+
+def test_an_applied_proposal_is_not_offered_again(tmp_path, monkeypatch, capsys):
+    _, _, calls = _multi_harness(tmp_path, monkeypatch)
+    _run_apply("--only", "p1", "--yes")
+    capsys.readouterr()
+    _run_apply("--only", "p1", "--yes")
+
+    assert calls == ["p1"]                          # applied once, not twice
+    out = capsys.readouterr().out
+    assert "already applied: p1" in out
+    assert "nothing to apply" in out
+

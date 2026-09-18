@@ -50,3 +50,19 @@ def test_same_id_on_different_source_types_are_distinct(tmp_path: Path):
     ledger = Ledger(tmp_path / "l.db")
     ledger.record("youtube", "a")
     assert not ledger.seen("article", "a")
+
+
+def test_recording_without_a_title_keeps_the_existing_one(tmp_path: Path):
+    """`sla apply` updates only the status, and that used to erase the title.
+
+    Found on the first real approval: the ledger then listed the video as
+    `[applied] 9_SZFIW7tus` with no title at all.
+    """
+    ledger = Ledger(tmp_path / "l.db")
+    ledger.record("youtube", "a", title="A title", url="https://x", note_path="/n.md")
+    ledger.record("youtube", "a", status="applied")
+    row = ledger.all()[0]
+    assert (row["title"], row["url"], row["note_path"], row["status"]) == (
+        "A title", "https://x", "/n.md", "applied",
+    )
+
