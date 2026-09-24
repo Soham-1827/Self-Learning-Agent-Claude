@@ -182,17 +182,31 @@ def test_caption_json3_is_parsed_from_where_ytdlp_wrote_it(source, monkeypatch):
     assert result["events"] == CAPTIONS["events"]
 
 
-def test_a_failed_caption_download_degrades_to_no_captions(source, monkeypatch):
+def test_a_failed_caption_download_raises_instead_of_looking_like_no_captions(
+    source, monkeypatch
+):
+    """Returning {} here is how a rate-limit became "this video has no transcript".
+
+    The empty result is cached, so the failure outlives the rate-limit and every
+    later run reads the absence back out of the cache.
+    """
     _install(monkeypatch, lambda cmd: _Proc(1, stderr="ERROR: HTTP Error 429"))
-    assert source._fetch_captions(VIDEO, {"_has_auto_en": True}) == {}
+    with pytest.raises(YouTubeError, match="429"):
+        source._fetch_captions(VIDEO, {"_has_auto_en": True})
 
 
-def test_a_download_that_writes_no_file_degrades_to_no_captions(source, monkeypatch):
-    _install(monkeypatch, lambda cmd: _Proc(0))
-    assert source._fetch_captions(VIDEO, {"_has_auto_en": True}) == {}
+def test_an_error_that_exits_zero_is_still_an_error(source, monkeypatch):
+    """yt-dlp prints ERROR and exits 0 when a subtitle download is rate-limited.
 
-
-# -- _channel_video_ids ------------------------------------------------
+    Observed live on 2026-09-24: "Unable to download video subtitles for 'en':
+    HTTP Error 429", exit status 0, and no file written.
+    """
+    _install(monkeypatch, lambda cmd: _Proc(0, stderr=(
+        "[info] Writing video subtitles to: /tmp/x/cap.en.json3\n"
+        "ERROR: Unable to download video subtitles for 'en': "
+        "HTTP Error 429: Too Many Requests")))
+    with pytest.raises(YouTubeError, match="429"):
+        source._fetch_captions(VIDEO, {"_has_auto_en": True})
 
 
 def _flat(*entries):
@@ -309,3 +323,19 @@ def test_handles_recognises_youtube_references(source, ref, expected):
 @pytest.mark.parametrize("value", [None, "", "2026", "20261399", "notadate"])
 def test_unparseable_upload_dates_become_none(value):
     assert yt._parse_date(value) is None
+
+
+def test_a_caption_failure_is_never_cached(source, monkeypatch):
+    """Caching the empty result is what made a transient failure permanent."""
+    meta = {**FULL_METADATA, "subtitles": {}, "automatic_captions": {"en": [{"ext": "json3"}]}}
+
+    def handler(cmd):
+        if "--dump-single-json" in cmd:
+            return _Proc(0, stdout=json.dumps(meta))
+        return _Proc(0, stderr="ERROR: HTTP Error 429: Too Many Requests")
+
+    _install(monkeypatch, handler)
+    with pytest.raises(YouTubeError):
+        source.fetch(VIDEO)
+    assert source.cache.get("youtube", VIDEO, "captions") is None
+

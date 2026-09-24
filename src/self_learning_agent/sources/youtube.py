@@ -126,7 +126,13 @@ class YouTubeSource:
         return meta
 
     def _fetch_captions(self, video_id: str, meta: dict) -> dict:
-        """Prefer human captions; fall back to ASR. Returns {} when none exist."""
+        """Captions for a video; {} only when the video genuinely has none.
+
+        A failure must never look like an absence. The result is cached, so a
+        transient rate-limit that returned {} would become a permanent "this
+        video has no transcript" — and the note would be written from the
+        description alone without anyone noticing.
+        """
         url = f"https://www.youtube.com/watch?v={video_id}"
         manual = bool(meta.get("_has_manual_en"))
         if not manual and not meta.get("_has_auto_en"):
@@ -134,32 +140,35 @@ class YouTubeSource:
         flag = "--write-subs" if manual else "--write-auto-subs"
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "cap"
-            try:
-                self._run([
-                    "--skip-download", flag, "--sub-langs", "en.*",
-                    "--sub-format", "json3", "-o", str(out), url,
-                ])
-            except YouTubeError:
-                return {}
+            _, stderr = self._run([
+                "--skip-download", flag, "--sub-langs", "en.*",
+                "--sub-format", "json3", "-o", str(out), url,
+            ], with_stderr=True)
             files = sorted(Path(tmp).glob("*.json3"))
             if not files:
-                return {}
+                # Metadata said captions exist, so this is a failure, not an absence.
+                raise YouTubeError(
+                    f"captions for {video_id} were not downloaded: {_error_summary(stderr)}"
+                )
             payload = json.loads(files[0].read_text(encoding="utf-8"))
         payload["_quality"] = (
             TextQuality.MANUAL_CAPTIONS if manual else TextQuality.AUTO_CAPTIONS
         )
         return payload
 
-    def _run(self, args: list[str]) -> str:
+    def _run(self, args: list[str], *, with_stderr: bool = False):
+        """Run yt-dlp; return stdout, or (stdout, stderr) when asked.
+
+        yt-dlp can print an ERROR and still exit 0 — a rate-limited subtitle
+        download does exactly that — so a caller that cares must read stderr.
+        """
         cmd = [*self.config.ytdlp_cmd, "--no-warnings", *args]
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
         if proc.returncode != 0:
             raise YouTubeError(
                 f"yt-dlp failed ({proc.returncode}): {_error_summary(proc.stderr)}"
             )
-        return proc.stdout
-
-    # -- assembly ----------------------------------------------------------
+        return (proc.stdout, proc.stderr) if with_stderr else proc.stdout
 
     def _build(self, video_id: str, meta: dict, captions: dict) -> SourceDocument:
         segments = parse_json3(captions)
