@@ -23,6 +23,14 @@ WORDS_PER_MINUTE = 150
 LIKELY_TOOLING = "likely tooling"
 LIKELY_CONCEPTUAL = "likely conceptual"
 
+# What YouTube lists for the video. `unknown` is its own answer: metadata
+# cached before these flags existed did not record them, and "not asked" must
+# never be shown as "none" (§23).
+CAPTIONS_MANUAL = "manual"
+CAPTIONS_AUTO = "auto"
+CAPTIONS_NONE = "none"
+CAPTIONS_UNKNOWN = "unknown"
+
 # Words that tend to mean "this video demonstrates something you could install".
 # Kept narrow on purpose: broad words like "tools" or "workflow" appear in almost
 # every AI video title and would make the guess say "tooling" for everything.
@@ -61,6 +69,7 @@ class Candidate:
     github_repos: tuple[str, ...]
     likely_class: str
     signals: tuple[str, ...]
+    captions: str = CAPTIONS_UNKNOWN
     suggested: bool = False
 
     @property
@@ -68,7 +77,20 @@ class Candidate:
         return round((self.duration_seconds or 0) / 60)
 
     @property
+    def readable(self) -> bool:
+        """Is there a transcript to read at all? `unknown` gets the benefit."""
+        return self.captions != CAPTIONS_NONE
+
+    @property
     def estimated_words(self) -> int:
+        """Duration x 150 wpm — an estimate, and zero when there is no transcript.
+
+        The first live run promised ~4,722 words for a video that turned out to
+        have nothing fetchable (§23). An estimate printed beside hard facts
+        reads as one, so where there is nothing to estimate it says nothing.
+        """
+        if not self.readable:
+            return 0
         return round((self.duration_seconds or 0) / 60 * WORDS_PER_MINUTE)
 
     @property
@@ -90,7 +112,24 @@ class QueueResult:
 
     @property
     def suggested_words(self) -> int:
+        """Estimated across the picks — and a video with no captions adds none."""
         return sum(c.estimated_words for c in self.suggested)
+
+
+def caption_state(meta: dict) -> str:
+    """What the metadata says about English captions, without guessing.
+
+    Triage already pays for this metadata, so availability costs nothing extra.
+    A listed track can still fail to download — that is the fetch's problem to
+    report — but a video with nothing listed can never be read at all.
+    """
+    if meta.get("_has_manual_en"):
+        return CAPTIONS_MANUAL
+    if meta.get("_has_auto_en"):
+        return CAPTIONS_AUTO
+    if "_has_manual_en" in meta or "_has_auto_en" in meta:
+        return CAPTIONS_NONE
+    return CAPTIONS_UNKNOWN
 
 
 def _keywords_in(text: str) -> tuple[str, ...]:
@@ -144,13 +183,16 @@ def candidate_from_meta(source_id: str, meta: dict) -> Candidate:
         github_repos=repos,
         likely_class=likely,
         signals=signals,
+        captions=caption_state(meta),
     )
 
 
 def rank(candidates, cap: int) -> tuple[Candidate, ...]:
-    """Likely-tooling first, then newest; the first `cap` become suggested picks.
+    """Readable first, then likely-tooling, then newest; the first `cap` are picks.
 
-    Tooling leads because it is what turns into approvable setup. The sort is
+    Tooling leads because it is what turns into approvable setup. A video with
+    no captions listed comes last whatever it looks like: a pick is an
+    instruction to read a transcript, and that one has none to read. The sort is
     stable, so ties keep the channel's own newest-first order.
     """
     if cap < 0:
@@ -159,6 +201,7 @@ def rank(candidates, cap: int) -> tuple[Candidate, ...]:
     def key(c: Candidate):
         undated = c.published is None
         return (
+            not c.readable,
             c.likely_class != LIKELY_TOOLING,
             undated,
             -(c.published.toordinal() if c.published else 0),
@@ -217,6 +260,7 @@ def to_dict(result: QueueResult) -> dict:
         "suggested": [c.source_id for c in result.suggested],
         "suggested_words": result.suggested_words,
         "class_is_a_guess": True,
+        "words_are_estimated": True,
         "candidates": [
             {
                 "rank": i,
@@ -227,6 +271,7 @@ def to_dict(result: QueueResult) -> dict:
                 "minutes": c.minutes,
                 "chapters": c.chapter_count,
                 "github_repos": list(c.github_repos),
+                "captions": c.captions,
                 "estimated_words": c.estimated_words,
                 "likely_class": c.likely_class,
                 "signals": list(c.signals),
@@ -255,14 +300,16 @@ def format_table(result: QueueResult) -> str:
     else:
         lines.append(
             f"{'pick':<4} {'#':>2}  {'id':<11}  {'published':<10} {'min':>4} {'ch':>3} "
-            f"{'gh':>3} {'~words':>7}  {'guess':<17}  title"
+            f"{'gh':>3} {'captions':<8} {'~words':>7}  {'guess':<17}  title"
         )
         for i, c in enumerate(result.candidates, start=1):
             published = c.published.isoformat() if c.published else "—"
+            # No transcript, no word count: "0" would read as a measurement.
+            words = f"{c.estimated_words:,}" if c.readable else "—"
             lines.append(
                 f"{'✓' if c.suggested else '':<4} {i:>2}  {c.source_id:<11}  {published:<10} "
                 f"{c.minutes:>4} {c.chapter_count:>3} {len(c.github_repos):>3} "
-                f"{c.estimated_words:>7,}  {c.likely_class:<17}  {_clip(c.title, 52)}"
+                f"{c.captions:<8} {words:>7}  {c.likely_class:<17}  {_clip(c.title, 48)}"
             )
         lines += ["", "Why each suggested pick:"]
         for i, c in enumerate(result.candidates, start=1):
@@ -272,8 +319,10 @@ def format_table(result: QueueResult) -> str:
             "",
             f"Suggested: {len(result.suggested)} video(s), "
             f"~{result.suggested_words:,} words of transcript.",
-            "The class column is a guess from metadata only; synthesis classifies "
-            "each video for real.",
+            "guess is from metadata only; synthesis classifies each video for real. "
+            f"~words is duration x {WORDS_PER_MINUTE} wpm, never a counted transcript.",
+            "captions is what YouTube lists — a listed track can still fail to "
+            "download, and 'unknown' means the metadata predates the check.",
         ]
 
     for source_id, reason in result.failures:

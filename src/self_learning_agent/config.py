@@ -19,6 +19,10 @@ class Config:
     vault_subdir: str = "Sources"
     install_mode: str = "copy"  # D7: "copy" | "symlink"
     ytdlp_cmd: tuple[str, ...] = ()
+    # YouTube rate-limits a burst of requests and keeps refusing for a while
+    # (§23). Retrying costs a wait; not retrying costs the whole run.
+    ytdlp_attempts: int = 3
+    ytdlp_backoff_seconds: float = 5.0
 
     @property
     def cache_dir(self) -> Path:
@@ -106,4 +110,8 @@ def load(home: Path | None = None) -> Config:
         vault_path=Path(data.get("vault_path", cfg.vault_path)).expanduser(),
         vault_subdir=data.get("vault_subdir", cfg.vault_subdir),
         install_mode=data.get("install_mode", cfg.install_mode),
+        ytdlp_attempts=max(1, int(data.get("ytdlp_attempts", cfg.ytdlp_attempts))),
+        ytdlp_backoff_seconds=max(
+            0.0, float(data.get("ytdlp_backoff_seconds", cfg.ytdlp_backoff_seconds))
+        ),
     )

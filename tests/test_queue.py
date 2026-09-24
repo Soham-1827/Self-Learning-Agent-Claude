@@ -10,6 +10,10 @@ from self_learning_agent.config import Config
 from self_learning_agent.ledger import Ledger, processed_ids, read_rows
 from self_learning_agent.sources.youtube import YouTubeError, YouTubeSource, video_id_from_ref
 from self_learning_agent.triage import (
+    CAPTIONS_AUTO,
+    CAPTIONS_MANUAL,
+    CAPTIONS_NONE,
+    CAPTIONS_UNKNOWN,
     LIKELY_CONCEPTUAL,
     LIKELY_TOOLING,
     build_queue,
@@ -21,14 +25,24 @@ from self_learning_agent.triage import (
 )
 
 
-def _meta(title, upload_date="20260901", duration=1200, chapters=(), description=""):
-    return {
+def _meta(title, upload_date="20260901", duration=1200, chapters=(), description="",
+          captions=None):
+    """Metadata as `sla queue` sees it.
+
+    `captions=None` leaves the availability flags out entirely, which is what a
+    cache entry written before they existed looks like.
+    """
+    meta = {
         "title": title,
         "upload_date": upload_date,
         "duration": duration,
         "description": description,
         "chapters": [{"start_time": i * 60, "title": t} for i, t in enumerate(chapters)],
     }
+    if captions is not None:
+        meta["_has_manual_en"] = captions == CAPTIONS_MANUAL
+        meta["_has_auto_en"] = captions == CAPTIONS_AUTO
+    return meta
 
 
 class FakeSource:
@@ -140,6 +154,11 @@ def test_invalid_bounds_are_rejected(last, cap):
         build_queue(FakeSource(CHANNEL), "@x", last=last, cap=cap)
 
 
+def test_ranking_rejects_a_negative_cap_on_its_own():
+    with pytest.raises(ValueError):
+        rank([], -1)
+
+
 def test_last_limits_how_many_videos_are_considered():
     result = build_queue(FakeSource(CHANNEL), "@x", last=2, cap=5)
     assert result.listed == 2
@@ -241,6 +260,84 @@ def test_json_output_shape():
     first = data["candidates"][0]
     assert first["rank"] == 1 and first["url"].endswith("tooling0001")
     assert first["github_repos"] == ["acme/agent-kit"]
+
+
+# -- caption availability ------------------------------------------------
+
+
+@pytest.mark.parametrize("flags,expected", [
+    ({"_has_manual_en": True, "_has_auto_en": True}, CAPTIONS_MANUAL),
+    ({"_has_manual_en": False, "_has_auto_en": True}, CAPTIONS_AUTO),
+    ({"_has_manual_en": False, "_has_auto_en": False}, CAPTIONS_NONE),
+    ({}, CAPTIONS_UNKNOWN),
+])
+def test_caption_availability_comes_from_metadata_already_fetched(flags, expected):
+    """Triage pays for this metadata anyway; the answer was being thrown away."""
+    assert candidate_from_meta("x" * 11, {**_meta("t"), **flags}).captions == expected
+
+
+def test_a_video_with_no_captions_is_not_promised_a_word_count():
+    """~words is duration x 150 wpm. With no transcript to read it is a fiction (§23)."""
+    c = candidate_from_meta("x" * 11, _meta("t", duration=1200, captions=CAPTIONS_NONE))
+    assert c.estimated_words == 0
+
+
+def test_an_unknown_caption_state_keeps_its_estimate():
+    """Absent flags mean "not asked", never "none" — a failure is not an absence."""
+    c = candidate_from_meta("x" * 11, _meta("t", duration=1200))
+    assert c.captions == CAPTIONS_UNKNOWN and c.estimated_words == 3000
+
+
+def test_videos_with_no_captions_rank_last_even_when_they_look_like_tooling():
+    """A pick is an instruction to read a transcript; there is none to read."""
+    channel = {
+        "tooling0001": _meta("My agent stack", captions=CAPTIONS_NONE,
+                             description="https://github.com/acme/kit"),
+        "concept0001": _meta("Why founders burn out", captions=CAPTIONS_AUTO),
+    }
+    result = build_queue(FakeSource(channel), "@x", last=10, cap=1)
+    assert [c.source_id for c in result.candidates] == ["concept0001", "tooling0001"]
+    assert [c.source_id for c in result.suggested] == ["concept0001"]
+
+
+def test_an_unknown_caption_state_is_not_demoted():
+    channel = {
+        "unknown0001": _meta("My agent stack", description="https://github.com/acme/kit"),
+        "concept0001": _meta("Why founders burn out", captions=CAPTIONS_AUTO),
+    }
+    result = build_queue(FakeSource(channel), "@x", last=10, cap=2)
+    assert [c.source_id for c in result.candidates] == ["unknown0001", "concept0001"]
+
+
+def test_suggested_words_counts_only_what_can_be_read():
+    channel = {
+        "readable001": _meta("A", duration=1200, captions=CAPTIONS_AUTO),
+        "silent00001": _meta("B", duration=1200, captions=CAPTIONS_NONE),
+    }
+    assert build_queue(FakeSource(channel), "@x", last=10, cap=2).suggested_words == 3000
+
+
+def test_the_table_reports_captions_and_labels_the_estimate():
+    channel = {
+        "readable001": _meta("A", duration=1200, captions=CAPTIONS_AUTO),
+        "silent00001": _meta("B", duration=1200, captions=CAPTIONS_NONE),
+        "unknown0001": _meta("C", duration=1200),
+    }
+    text = format_table(build_queue(FakeSource(channel), "@x", last=10, cap=3))
+
+    assert "captions" in text                       # the column exists
+    assert "auto" in text and "none" in text and "unknown" in text
+    assert "150 wpm" in text                        # the estimate says what it is
+    silent = [l for l in text.splitlines() if "silent00001" in l][0]
+    assert "3,000" not in silent and "—" in silent  # no invented word count
+
+
+def test_json_carries_caption_availability():
+    channel = {"silent00001": _meta("B", duration=1200, captions=CAPTIONS_NONE)}
+    data = to_dict(build_queue(FakeSource(channel), "@x", last=1, cap=1))
+    assert data["candidates"][0]["captions"] == CAPTIONS_NONE
+    assert data["candidates"][0]["estimated_words"] == 0
+    assert data["words_are_estimated"] is True
 
 
 # -- CLI -----------------------------------------------------------------
