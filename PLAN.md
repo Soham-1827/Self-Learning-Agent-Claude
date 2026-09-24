@@ -873,7 +873,7 @@ spends two subtitle requests where one would do**. After roughly fifteen request
 returned 429 for caption downloads and kept returning it for at least twenty minutes,
 blocking both picks.
 
-Follow-ups, none implemented yet:
+Follow-ups, all three done the same day — see §24:
 
 - narrow `--sub-langs` to a single track, with a fallback
 - back off and retry on 429 instead of failing the run
@@ -886,3 +886,124 @@ The `~words` column is duration × ~150 wpm. It cannot know whether captions are
 at all: for `_LCeJZFIsd4` it promised ~4,722 words where the real answer was "blocked". An
 estimate presented beside hard facts reads as one, so it belongs in the table's own
 labelling, not in a footnote.
+
+---
+
+## 24. Field notes: spending fewer requests, and surviving the ones refused (2026-09-24)
+
+The three follow-ups from §23, built and verified the same day.
+
+### One track, chosen from the names rather than matched by a pattern
+
+`--sub-langs "en.*"` is a regex, and yt-dlp anchors it — so it matched `en` *and*
+`en-orig` and downloaded both. Two subtitle requests per video, one of them redundant,
+in the exact budget that ran out.
+
+Fixing it needs the track *names*, which the metadata call already knows and was
+throwing away. `_fetch_metadata` now records `_en_manual` and `_en_auto` and derives the
+old booleans from them, so availability and selection come from one fact rather than two.
+
+The order is the choice: a track named `<lang>-orig` is the video's own language rather
+than a machine translation of it, so it leads, then exact `en`, then the rest. Only the
+first is requested; the others are the fallback if it yields nothing.
+
+| Metadata | Requests |
+|---|---|
+| `{en, en-orig}` | 1 (`en-orig`) |
+| written before track names existed | 1 (`en`), falling back to the old `en.*` |
+
+A cache entry from before this change still carries only the booleans. Treating that as a
+miss would re-fetch every video's metadata — a request storm inside the fix for a request
+limit — so the legacy path asks for `en` alone and keeps `en.*` as its fallback.
+
+### Retrying is about what the error says, not what the exit code says
+
+Backoff lives in `_run`, because the metadata call needs it as much as the caption call:
+triage spends one request per candidate before anything is read. 3 attempts, waiting 5s
+then 20s, both configurable.
+
+Two things decide when it fires:
+
+- **Only yt-dlp's `ERROR` lines count.** yt-dlp retries internally and narrates it; a
+  `429` it recovered from is not a reason to run the whole command again.
+- **The exit code is not the signal.** A rate-limited subtitle download prints `ERROR`
+  and exits 0 (§23), so the retry reads stderr for the same reason the caller does.
+
+Everything that is not a 429 stays final. Asking again for a video that does not exist
+spends the budget that made this fail.
+
+The same reasoning ends the track fallback early: a 429 refuses the *video*, not the
+track, so trying the next one only buys a second refusal.
+
+### Verified live, and the honest limit of it
+
+Re-running the blocked `_LCeJZFIsd4` while still rate-limited: exactly **one** caption
+request, three attempts, 43s wall clock — the 25s of backoff plus the calls — then a
+failure quoting yt-dlp, and **no cache entry written**. The fix works; the block outlasts
+it.
+
+> Backoff rides out a burst. It cannot outwait a refusal measured in tens of minutes, and
+> pretending otherwise would just be a slower failure. What actually protects a channel
+> run is spending fewer requests — which is what the first change does — and stopping
+> cleanly when refused, which is what the second one does.
+
+`/learn-from` is told to stop on a 429 rather than work through the remaining picks:
+every attempt extends the block, and nothing was recorded, so the picks are offered again
+unchanged.
+
+### `unknown` is an answer, and an estimate is not a measurement
+
+`sla queue` now carries a `captions` column, free — the flags were already fetched and
+discarded. Three of its four values were easy; the fourth is the point.
+
+| Value | Means |
+|---|---|
+| `manual` / `auto` | YouTube lists an English track |
+| `none` | it lists none — there is nothing to read |
+| `unknown` | the metadata predates the check |
+
+`unknown` exists so that "not asked" is never rendered as "none". That is §23's rule
+(a failure must never look like an absence) applied to a *missing field* rather than a
+missing download, and it is one `in` check away from getting it wrong.
+
+Two consequences follow:
+
+- **A video with no captions ranks last**, whatever its title suggests. A pick is an
+  instruction to read a transcript, and that one has none to read.
+- **Its `~words` reads `—`, not `0`.** The estimate had promised ~4,722 words for a video
+  with nothing fetchable. Where there is nothing to estimate, the column says nothing —
+  and the header line now states that `~words` is duration × 150 wpm and that a listed
+  caption track can still fail to download.
+
+`unknown` keeps its estimate and its rank: the benefit of the doubt belongs to the state
+that means "we did not ask".
+
+### What would actually help next
+
+Neither is needed for a run with the owner present; both matter for M6, where nobody is
+watching the run trip the limit.
+
+- **Pace the requests.** Volume is one lever and spacing is the other. Triage fires ten
+  metadata calls back to back; a small delay between them costs seconds and may be what
+  keeps a run under the threshold.
+- **Remember being refused.** A 429 is currently forgotten the moment the process exits,
+  so the next run walks straight back into it. A recorded "refused at T" would let a
+  later run — or a scheduled one — wait rather than spend requests discovering the same
+  block. It must expire, and it must never be confused with "this video has no captions".
+
+### Two bounds a review asked for, and one it was right about
+
+- **The wait is capped at 120s per retry.** `ytdlp_attempts` is the owner's to set and
+  `4**` grows fast: eight attempts at the default base would have parked a run for
+  nearly six hours.
+- **`{}` from `_fetch_captions` now means "metadata said there are none", never
+  "metadata did not say".** A cache entry predating the caption flags cannot tell those
+  apart, and `{}` would have been cached as the former — §23's defect one layer earlier.
+  It raises and says to re-fetch. No entry that old survives locally; the point is that
+  the reachable-today version of this bug is the one that shipped last time.
+
+The retry reads an `ERROR` line as "the call failed", which is what makes the exit-0
+case detectable at all. Where yt-dlp is asked for several things at once it can refuse
+one and deliver another, and a retry then repeats work that succeeded. Only the legacy
+`en.*` fallback asks for more than one thing, and it costs a request rather than a wrong
+answer, so the simpler rule stands — written down rather than left implicit.

@@ -103,10 +103,23 @@ a whole channel on your own initiative.
    is a guess from metadata. Say so, and never drop a video because of the guess
    without telling the owner.
 
+   Two columns are not facts about the video. `~words` is duration × 150 wpm, not a
+   count. `captions` is what YouTube lists: a video reading `none` has no transcript
+   to read, so it ranks last and is a poor pick — say that if the owner picks one
+   anyway. `unknown` means the metadata predates the check, not that captions are
+   missing.
+
 3. **Process each chosen video on its own**, in full, with the single-video
    procedure above: a fresh brief, classify, reconcile, synthesise, `sla note`.
    Keep one transcript in context at a time — render one note before building the
    next brief. Several transcripts at once crowd out the reading each one needs.
+
+   **If a brief fails with `HTTP 429`, stop.** YouTube is refusing caption
+   downloads; `sla` has already retried with backoff and cached nothing. Do not
+   write a note from the description alone, and do not keep trying the remaining
+   picks — every attempt extends the block. Report which videos were left
+   unprocessed and that the run can resume unchanged once the limit clears (it
+   lasts tens of minutes). Nothing was recorded, so they will be offered again.
 
 4. **Digest** the ones you processed:
 

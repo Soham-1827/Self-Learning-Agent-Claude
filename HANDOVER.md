@@ -15,11 +15,11 @@ installs.
   videos teach. Notes should serve that, not just summarise.
 
 **[PLAN.md](PLAN.md) is the source of truth.** Decisions D1–D7, improvements I1–I4,
-the security model (§8), and field notes from every milestone (§15–§23).
+the security model (§8), and field notes from every milestone (§15–§24).
 
 ## Status
 
-**v1 (M0–M4) and M5 are complete.** 285 tests, 91% coverage, CI green on 3.10–3.13.
+**v1 (M0–M4) and M5 are complete.** 313 tests, 91% coverage, CI green on 3.10–3.13.
 The whole loop has run for real: video → note → scan → owner's `y` → live skill.
 
 **The first live channel run was blocked by YouTube rate limiting (§23)** — triage
@@ -117,6 +117,11 @@ work:
     implements it. A brief is as load-bearing as the code it produces.
 12. **A failure must never look like an absence** (§23). Empty results get cached and read
     back as fact. If something was expected and did not arrive, raise and say why.
+13. **A missing field is not a negative answer** (§24). Triage's `captions` column has a
+    fourth value, `unknown`, because metadata cached before the check existed does not
+    say "none" — it says nothing. Same rule as 12, one layer up.
+14. **Retry only what asking again can fix** (§24). A `429` is a wait; everything else is
+    final, and re-asking spends the budget that caused the failure.
 
 ## Fixtures — all three committed under `tests/fixtures/`
 
@@ -130,16 +135,12 @@ Notes for all three are in `/mnt/d/LearningVault/Sources/`.
 
 ## What to build next
 
-**Start here: make channel runs survive rate limiting (§23).** It is what stops M5 being
-usable on a real channel, and all three parts are small:
+**Rate limiting is handled as far as it can be (§24).** Caption downloads cost one
+subtitle request instead of two, a `429` is retried with backoff, and `sla queue` reports
+caption availability. What remains is not fixable from here: backoff rides out a burst,
+not a block measured in tens of minutes. Spending fewer requests is the actual defence.
 
-- narrow `--sub-langs "en.*"` to a single track with a fallback — today it spends two
-  subtitle requests per video where one would do
-- back off and retry on `HTTP 429` rather than failing the run
-- have `sla queue` report caption availability from the `_has_auto_en` it already fetches,
-  instead of only a duration-based word estimate that cannot know
-
-Then, roughly by value:
+Roughly by value:
 
 - **Close the apply-flow gaps** (below) — small, and they are the last rough edges in a
   loop that now runs for real.

@@ -6,7 +6,7 @@
 > vault note with validated proposals; `/learn-from @channel` triages a creator's
 > latest uploads for you to pick from; `sla apply` reviews proposals one at a time
 > behind a SkillSpector scan. Nothing is ever applied without you saying yes.
-> 285 tests, 91% coverage, CI on Python 3.10–3.13. Architecture is in
+> 313 tests, 91% coverage, CI on Python 3.10–3.13. Architecture is in
 > [PLAN.md](PLAN.md); to pick the work up cold, read [HANDOVER.md](HANDOVER.md).
 
 ---
@@ -196,15 +196,25 @@ never downloads a transcript. Videos you have already processed are left out. A 
 run:
 
 ```
-pick  #  id           published   min  ch  gh  ~words  guess              title
-✓     1  _LCeJZFIsd4  2026-09-14   31  10   0   4,722  likely tooling     Building a Software Factory that actually works (Fu…
-✓     2  nglqTHwuZ-8  2026-09-10   23   7   0   3,430  likely tooling     GPT-6 Astra: How I'd Make Money With It
-✓     3  mUAsaprJ66s  2026-09-15   28   9   0   4,125  likely conceptual  Instinct AI is For Real. What You Need to Know.
-✓     4  UtFo1ZNC2ns  2026-09-08   39  18   0   5,815  likely conceptual  I'm Obsessed With Local AI. Here's Why
+pick  #  id           published   min  ch  gh captions  ~words  guess              title
+✓     1  _LCeJZFIsd4  2026-09-14   31  10   0 auto       4,722  likely tooling     Building a Software Factory that actually works…
+✓     2  nglqTHwuZ-8  2026-09-10   23   7   0 manual     3,430  likely tooling     GPT-6 Astra: How I’d Make Money With It
+✓     3  mUAsaprJ66s  2026-09-15   28   9   0 auto       4,125  likely conceptual  Instinct AI is For Real. What You Need to Know.
+✓     4  UtFo1ZNC2ns  2026-09-08   39  18   0 auto       5,815  likely conceptual  I'm Obsessed With Local AI. Here's Why
 ```
 
-The class column is a guess from metadata; each video is classified for real when it
-is read. You choose what gets processed — `/learn-from @handle` shows this table and
+Three of those columns carry a caveat, and the table states them rather than leaving
+them to a footnote:
+
+- **`guess`** is metadata only. Each video is classified for real when it is read.
+- **`~words`** is duration × 150 wpm, never a counted transcript. A video with no
+  captions shows `—`, because there is nothing there to estimate.
+- **`captions`** is what YouTube lists — `manual`, `auto`, `none`, or `unknown` for a
+  cache entry written before the check existed. A listed track can still fail to
+  download; nothing here promises otherwise. Videos with no captions rank last: a
+  pick is an instruction to read a transcript, and those have none to read.
+
+You choose what gets processed — `/learn-from @handle` shows this table and
 waits — and each pick then goes through the single-video flow on its own, one
 transcript at a time. `sla digest` finishes with one note that links the batch and
 gathers every proposal by risk tier.
@@ -263,9 +273,12 @@ That is the design working, not failing.
    solved. Low-confidence names are flagged in the note.
 3. **No members-only or paywalled content.**
 4. **YouTube rate-limits caption downloads.** Triaging a channel and then reading
-   several videos can earn an `HTTP 429` that lasts tens of minutes. The pipeline now
-   says so plainly and caches nothing, so a retry works once the limit clears — but it
-   cannot currently avoid the limit (PLAN §23).
+   several videos can earn an `HTTP 429` that lasts tens of minutes. The pipeline
+   spends half the subtitle requests it used to, retries a 429 with backoff, says so
+   plainly when it gives up, and caches nothing — so a run after the limit clears just
+   works. Backoff rides out a burst; it cannot outwait a block measured in tens of
+   minutes (PLAN §23). Tune it with `ytdlp_attempts` and `ytdlp_backoff_seconds` in
+   `config.json`.
 5. **Quality is bounded by the creator.** This faithfully relays what a video claims.
    It does not independently verify that the advice is any good.
 
