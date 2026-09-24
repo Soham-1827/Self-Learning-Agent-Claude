@@ -942,7 +942,7 @@ request, three attempts, 43s wall clock — the 25s of backoff plus the calls �
 failure quoting yt-dlp, and **no cache entry written**. The fix works; the block outlasts
 it.
 
-> Backoff rides out a burst. It cannot outwait a refusal measured in tens of minutes, and
+> Backoff rides out a burst. It cannot outwait a refusal measured in hours, and
 > pretending otherwise would just be a slower failure. What actually protects a channel
 > run is spending fewer requests — which is what the first change does — and stopping
 > cleanly when refused, which is what the second one does.
@@ -1007,3 +1007,29 @@ case detectable at all. Where yt-dlp is asked for several things at once it can 
 one and deliver another, and a retry then repeats work that succeeded. Only the legacy
 `en.*` fallback asks for more than one thing, and it costs a request rather than a wrong
 answer, so the simpler rule stands — written down rather than left implicit.
+
+### How long the refusal actually lasts
+
+§23 recorded "at least twenty minutes" because that is how long the first run was
+watched for. Four checks after the fix, one request each, say it is far longer:
+
+| Time | Since the run that triggered it | Result |
+|---|---|---|
+| 01:07 | ~25 min | refused (3 attempts, 43s) |
+| 01:24 | ~40 min | refused |
+| 03:52 | ~3 h | refused |
+
+Five caption requests in three hours were not enough to clear it, which rules out a
+short sliding window and makes the mechanism something closer to a per-address penalty.
+The honest reading: **a channel run refused today may stay refused for the rest of the
+day**, and the twenty minutes in §23 was the observation window, not the limit.
+
+Three things follow, and they raise the two follow-ups above from nice-to-have to
+required:
+
+- **Retrying inside a session is pointless once a 429 survives the backoff.** The skill
+  says to stop; it should not offer to wait it out either.
+- **Remembering the refusal stops mattering only for M6 and starts mattering now.** Every
+  probe spends a request to rediscover a block already known about.
+- **Prevention is the whole game.** Halving the subtitle requests is worth more than any
+  retry policy, because the retry policy cannot win this.

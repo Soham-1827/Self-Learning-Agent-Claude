@@ -273,7 +273,7 @@ That is the design working, not failing.
    solved. Low-confidence names are flagged in the note.
 3. **No members-only or paywalled content.**
 4. **YouTube rate-limits caption downloads.** Triaging a channel and then reading
-   several videos can earn an `HTTP 429` that lasts tens of minutes. The pipeline
+   several videos can earn an `HTTP 429` that has been observed to last hours. The pipeline
    spends half the subtitle requests it used to, retries a 429 with backoff, says so
    plainly when it gives up, and caches nothing — so a run after the limit clears just
    works. Backoff rides out a burst; it cannot outwait a block measured in tens of

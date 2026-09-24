@@ -118,8 +118,9 @@ a whole channel on your own initiative.
    downloads; `sla` has already retried with backoff and cached nothing. Do not
    write a note from the description alone, and do not keep trying the remaining
    picks — every attempt extends the block. Report which videos were left
-   unprocessed and that the run can resume unchanged once the limit clears (it
-   lasts tens of minutes). Nothing was recorded, so they will be offered again.
+   unprocessed and that the run can resume unchanged once the limit clears — which
+   has taken hours, not minutes, so do not offer to wait it out in the same session.
+   Nothing was recorded, so they will be offered again.
 
 4. **Digest** the ones you processed:
 

@@ -138,7 +138,8 @@ Notes for all three are in `/mnt/d/LearningVault/Sources/`.
 **Rate limiting is handled as far as it can be (§24).** Caption downloads cost one
 subtitle request instead of two, a `429` is retried with backoff, and `sla queue` reports
 caption availability. What remains is not fixable from here: backoff rides out a burst,
-not a block measured in tens of minutes. Spending fewer requests is the actual defence.
+not a block that has now been measured in hours. Spending fewer requests is the actual
+defence, and a run refused today may stay refused for the rest of it.
 
 Roughly by value:
 
