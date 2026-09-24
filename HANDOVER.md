@@ -15,12 +15,17 @@ installs.
   videos teach. Notes should serve that, not just summarise.
 
 **[PLAN.md](PLAN.md) is the source of truth.** Decisions D1–D7, improvements I1–I4,
-the security model (§8), and field notes from every milestone (§15–§22).
+the security model (§8), and field notes from every milestone (§15–§23).
 
 ## Status
 
-**v1 (M0–M4) and M5 are complete.** 284 tests, 91% coverage, CI green on 3.10–3.13.
+**v1 (M0–M4) and M5 are complete.** 285 tests, 91% coverage, CI green on 3.10–3.13.
 The whole loop has run for real: video → note → scan → owner's `y` → live skill.
+
+**The first live channel run was blocked by YouTube rate limiting (§23)** — triage
+worked, both picked videos returned `HTTP 429` on their caption download, and no notes
+were written. The bug that made that dangerous (a failure cached as "no captions") is
+fixed; avoiding the limit is not. Start there.
 
 | M | | |
 |---|---|---|
@@ -106,6 +111,12 @@ work:
    the intended result.
 10. **The owner picks what gets read.** Channels are triaged from metadata; the class is
     a guess; nothing processes a whole channel on its own initiative.
+11. **A brief states what must be true, never what to return on failure** (§23). Writing
+    "yt-dlp failure → `{}`" into a brief produced a silent failure *and* two tests that
+    froze it in place. Say what must never happen and leave the mechanism to whoever
+    implements it. A brief is as load-bearing as the code it produces.
+12. **A failure must never look like an absence** (§23). Empty results get cached and read
+    back as fact. If something was expected and did not arrive, raise and say why.
 
 ## Fixtures — all three committed under `tests/fixtures/`
 
@@ -119,7 +130,16 @@ Notes for all three are in `/mnt/d/LearningVault/Sources/`.
 
 ## What to build next
 
-No milestone is locked. Candidates, roughly by value:
+**Start here: make channel runs survive rate limiting (§23).** It is what stops M5 being
+usable on a real channel, and all three parts are small:
+
+- narrow `--sub-langs "en.*"` to a single track with a fallback — today it spends two
+  subtitle requests per video where one would do
+- back off and retry on `HTTP 429` rather than failing the run
+- have `sla queue` report caption availability from the `_has_auto_en` it already fetches,
+  instead of only a duration-based word estimate that cannot know
+
+Then, roughly by value:
 
 - **Close the apply-flow gaps** (below) — small, and they are the last rough edges in a
   loop that now runs for real.
@@ -142,6 +162,9 @@ opt-in or always-confirm.
 - **The drift check promised in PLAN §8 Rule 6 is not implemented** — `sla status` does
   not diff repo copies against live skills.
 - **`p2` on the Greg note is still awaiting review** (status `partial`).
+- **Two videos were picked but never processed** — `_LCeJZFIsd4` (Software Factory) and
+  `EoNH3Tn8wYE` (WebMCP), both blocked by 429. Neither reached the ledger, so re-running
+  `/learn-from @GregIsenberg` offers them again.
 - Triage's class guess is heuristic and misfires at the margin (§22).
 - Coverage gap is mostly `cli.py` at 70%.
 - Vision on video frames is deferred.
@@ -154,15 +177,23 @@ opt-in or always-confirm.
 >
 > v1 (M0–M4) and M5 are complete: fetch, inventory, synthesis, an approval gate that
 > scans with SkillSpector before activating anything, and channel triage with batch
-> digests. 284 tests, 91% coverage, CI green on 3.10–3.13. The full loop has run for real.
-> `sla` is on PATH and `/learn-from <url | @handle>` works in any session. No next
-> milestone is locked — HANDOVER lists the candidates.
+> digests. 285 tests, 91% coverage, CI green on 3.10–3.13. The full loop has run for real.
+> `sla` is on PATH and `/learn-from <url | @handle>` works in any session.
+>
+> Next task: make channel runs survive YouTube rate limiting (PLAN §23). The first live
+> channel run hit HTTP 429 on caption downloads and wrote no notes. Three small parts:
+> narrow `--sub-langs "en.*"` to one track with a fallback (today it costs two subtitle
+> requests per video), back off and retry on 429 instead of failing, and have `sla queue`
+> report caption availability from the `_has_auto_en` it already fetches. Then re-run
+> `/learn-from @GregIsenberg` — `_LCeJZFIsd4` and `EoNH3Tn8wYE` were picked but never
+> processed.
 >
 > Load-bearing rules: the description is authoritative for entity names and the
 > transcript for reasoning (§15); the agent never emits a shell string (§8 Rule 1); a
 > scan blocks activation, never a download (§18); empty output beats invented output
 > (I3, §7.2); what activates is exactly what was scanned (§21); edits use exact-match
-> replacements that fail loudly (§22); and I pick what gets read.
+> replacements that fail loudly (§22); a failure must never look like an absence, because
+> empty results are cached and read back as fact (§23); and I pick what gets read.
 >
 > Environment: WSL, checkout on `/mnt/d` (DrvFs — files read 0777, chmod ignored). Use the
 > uv venv at `.venv`; never sudo. Verify on the CI matrix, not just 3.14. `git pull

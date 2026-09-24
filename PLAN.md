@@ -823,3 +823,66 @@ valid, the exact failure §19 was written to prevent. Now fixed with the exact-m
 The lesson generalises Rule 9: an edit made with a silent replace is unverified, *including
 the old ones*. Grep for the intended result, not just for the absence of an error.
 
+
+---
+
+## 23. Field notes: the first real channel run (2026-09-24)
+
+`/learn-from @GregIsenberg`, the first use of M5 against a live channel. Triage behaved
+exactly as designed: 10 latest resolved, the 1 already processed filtered out, 9 offered,
+no transcripts downloaded, and the owner picked 2 of the 5 suggestions. Then **neither
+pick produced a note**, for a reason that justified the whole exercise.
+
+### A failure that looked like an absence
+
+The first brief reported `text_quality: none`, 0 words, and every chapter empty — that is,
+"this video has no captions". The metadata said `auto_en=True`, and YouTube did list
+automatic captions. The truth was `HTTP Error 429: Too Many Requests`.
+
+| Defect | Effect |
+|---|---|
+| `_fetch_captions` returned `{}` whenever no subtitle file appeared | a failed download was indistinguishable from a video that has none |
+| `fetch()` cached that `{}` | a transient rate-limit became permanent — every later run read the absence back out of the cache |
+| yt-dlp prints `ERROR` and still exits 0 here | checking the return code saw success |
+
+Left alone this produces a confident note written from the description alone, with nothing
+marking the transcript as missing. That is precisely the outcome §15 exists to prevent, and
+the note would have looked fine.
+
+Fixed: `_run` can return stderr; `_fetch_captions` raises when metadata says captions exist
+but none arrived, quoting yt-dlp's own error; nothing is cached on that path, so a retry
+after the limit clears just works. The poisoned cache entry was deleted. Verified live.
+
+### The brief specified the bug
+
+Two tests asserted the old behaviour — and they were right to, given their instructions.
+The §22 brief listed, as a deliverable: *"`_fetch_captions`: no captions → `{}`; … yt-dlp
+failure → `{}`"*. The agent implemented the brief faithfully. The test that should have
+caught the defect **froze it instead**.
+
+> **Rule:** a brief states what must be *true*, never what a function should return on
+> failure. Where an error path matters, say what must never happen — "a failure must never
+> be cached, and must never look like an absence" — and leave the mechanism to the
+> implementer. A brief is as load-bearing as the code it produces.
+
+### Rate limiting is now a first-class failure mode
+
+Triage costs one metadata request per candidate (10 for `--last 10`), and every processed
+video costs more. `--sub-langs "en.*"` matches both `en` and `en-orig`, so **each video
+spends two subtitle requests where one would do**. After roughly fifteen requests YouTube
+returned 429 for caption downloads and kept returning it for at least twenty minutes,
+blocking both picks.
+
+Follow-ups, none implemented yet:
+
+- narrow `--sub-langs` to a single track, with a fallback
+- back off and retry on 429 instead of failing the run
+- have `sla queue` report caption availability — metadata already carries `_has_auto_en` —
+  rather than only an estimated word count
+
+### Triage against reality
+
+The `~words` column is duration × ~150 wpm. It cannot know whether captions are fetchable
+at all: for `_LCeJZFIsd4` it promised ~4,722 words where the real answer was "blocked". An
+estimate presented beside hard facts reads as one, so it belongs in the table's own
+labelling, not in a footnote.
