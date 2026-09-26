@@ -1112,3 +1112,74 @@ The retry from §24 never helped here and never could have: it re-asked a questi
 permanent answer, three times, 25s apart. It stays, because a genuine volume limit is
 still plausible and the cost is bounded — but the thing that actually recovers a refused
 caption download is **asking for a different track**, and that is now what happens first.
+
+---
+
+## 26. Field notes: a channel run, start to finish (2026-09-25)
+
+`/learn-from @GregIsenberg`, the run §23 failed at. 10 videos triaged, the owner picked 3,
+three notes and a digest written, nothing applied.
+
+### What the fixed fetch actually costs
+
+| Video | Metadata | Caption request | Result |
+|---|---|---|---|
+| `_LCeJZFIsd4` | cached, pre-track-names | 1 (`en-orig`, after a refresh) | 5,915 words |
+| `EoNH3Tn8wYE` | cached, pre-track-names | 1 (`en-orig`, legacy guess) | 5,337 words |
+| `84q4WA3kA8Q` | fresh from triage | 1 (`en-orig`, recorded) | 4,381 words, 10s |
+
+Triage itself: one listing request plus metadata for the one video not already cached.
+The whole three-note batch cost four network requests. §23's run spent about fifteen and
+produced nothing.
+
+The legacy guess earned its place: `EoNH3Tn8wYE` had metadata from before the track names
+existed and still resolved in one request, because `("en-orig", "en")` leads with the
+track that is actually served.
+
+### The class guess was wrong, and the note says so
+
+Triage called `84q4WA3kA8Q` **likely tooling** on the strength of tool words in the
+description: `api`, `claude code`, `codex`, `mcp`. It is a solo episode of business ideas
+with nothing installable in it, and its note is `conceptual` with `proposals: []`.
+
+That is the §22 margin, and the shape of the misfire is now specific: **an episode that
+talks about tools the whole way through without shipping one.** The keyword list cannot
+tell "here is a repo" from "you could build this with Codex". Since the guess is labelled
+as a guess and the owner picks, this cost nothing — but it is the second time the
+heuristic has leaned the same way, and if it is ever tightened, this is the case to test
+against.
+
+Worth noting what the empty result looks like in the vault: *"Nothing here is worth
+installing. No actions proposed."* Three videos, and the one with the most ideas in it
+proposed nothing — I3 working exactly as intended rather than as an excuse.
+
+### The two notes that had something to say about what is already installed
+
+The Software Factory episode demonstrates a four-step workflow. Checked against the
+inventory, three of its four steps are already covered here — `using-git-worktrees` is
+its "isolate" almost exactly, `coding-standards` and `hexagonal-architecture` cover
+"build", `requesting-code-review` covers "ship" — so the only proposal worth making was
+for the fourth, the before/after proof artifact, which nothing installed produces.
+
+This is the check M2 exists for, and it is the first time it changed the output rather
+than confirming it. A note that had listed all four steps as things to adopt would have
+been recommending, to an owner with 271 skills installed, three things they already own.
+
+### A real drift, found by invoking the skill
+
+Calling the skill loaded the **installed** copy from `~/.claude/skills/`, dated
+2026-09-09, which predates M5: no Channels section, and an instruction to run
+`sla brief @handle` — which the repo copy explicitly warns against, because it silently
+takes only the newest video.
+
+So `/learn-from @handle` in a fresh session would follow the pre-M5 procedure and process
+one video without saying so. The repo copy was followed here instead.
+
+> This is the drift check promised in §8 Rule 6, arriving as a live bug rather than a
+> hypothetical. It also sharpens what the check is for: not "has the file changed" but
+> "is the *instruction the agent will actually read* the current one". The dangerous
+> direction is the one that happened — the live copy older than the repo's, silently
+> teaching a superseded procedure.
+
+Not fixed here. Syncing it activates a skill, and what activates is the owner's call
+(§21, D7).

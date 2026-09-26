@@ -15,17 +15,18 @@ installs.
   videos teach. Notes should serve that, not just summarise.
 
 **[PLAN.md](PLAN.md) is the source of truth.** Decisions D1–D7, improvements I1–I4,
-the security model (§8), and field notes from every milestone (§15–§25).
+the security model (§8), and field notes from every milestone (§15–§26).
 
 ## Status
 
 **v1 (M0–M4) and M5 are complete.** 315 tests, 91% coverage, CI green on 3.10–3.13.
 The whole loop has run for real: video → note → scan → owner's `y` → live skill.
 
-**The first live channel run was blocked by YouTube rate limiting (§23)** — triage
-worked, both picked videos returned `HTTP 429` on their caption download, and no notes
-were written. The bug that made that dangerous (a failure cached as "no captions") is
-fixed; avoiding the limit is not. Start there.
+**A channel run has now completed end to end (§26).** `@GregIsenberg`, 10 triaged, owner
+picked 3, three notes and one digest written, six videos in the ledger. The `HTTP 429` that
+blocked the first attempt was never a rate limit — YouTube refuses the translated `en`
+auto-caption track and serves `en-orig` (§25). Caption downloads cost one request and
+about ten seconds.
 
 | M | | |
 |---|---|---|
@@ -169,10 +170,17 @@ opt-in or always-confirm.
 - **The drift check promised in PLAN §8 Rule 6 is not implemented** — `sla status` does
   not diff repo copies against live skills.
 - **`p2` on the Greg note is still awaiting review** (status `partial`).
-- **Two videos were picked but never processed** — `_LCeJZFIsd4` (Software Factory) and
-  `EoNH3Tn8wYE` (WebMCP), both blocked by 429. Neither reached the ledger, so re-running
-  `/learn-from @GregIsenberg` offers them again.
-- Triage's class guess is heuristic and misfires at the margin (§22).
+- **Four proposals from the 2026-09-25 batch are unreviewed** — `_LCeJZFIsd4` `p1` (a
+  before/after proof skill, risk `none`) and `p2` (a scoring PR reviewer, `high`/manual);
+  `EoNH3Tn8wYE` `p1` (clone the WebMCP reference repo, `medium`) and `p2` (Chrome flags,
+  `high`/manual, and one of them opens remote debugging on the browser holding your
+  sessions). Both notes are `pending-review`; `sla apply` is the owner's to run.
+- **The live `learn-from-source` skill has drifted from the repo copy.** The installed one
+  at `~/.claude/skills/` is dated 2026-09-09 and predates M5 — no Channels section, and it
+  tells the agent to run `sla brief @handle`, which silently takes only the newest video.
+  A session invoking `/learn-from @handle` gets the stale procedure. This is the drift
+  check above, arriving as a real bug rather than a hypothetical.
+- Triage's class guess is heuristic and misfires at the margin (§22, §26).
 - Coverage gap is mostly `cli.py` at 70%.
 - Vision on video frames is deferred.
 
@@ -182,25 +190,32 @@ opt-in or always-confirm.
 > and channels into Obsidian notes plus human-approved tool setup. Read `HANDOVER.md` and
 > `PLAN.md` in this repo — PLAN.md is the source of truth for decisions.
 >
-> v1 (M0–M4) and M5 are complete: fetch, inventory, synthesis, an approval gate that
-> scans with SkillSpector before activating anything, and channel triage with batch
-> digests. 285 tests, 91% coverage, CI green on 3.10–3.13. The full loop has run for real.
-> `sla` is on PATH and `/learn-from <url | @handle>` works in any session.
+> v1 (M0–M4) and M5 are complete: fetch, inventory, synthesis, an approval gate that scans
+> with SkillSpector before activating anything, and channel triage with batch digests. 315
+> tests, 91% coverage, CI green on 3.10–3.13. A full channel run has completed for real —
+> `@GregIsenberg`, 10 triaged, 3 picked, three notes and a digest (§26). `sla` is on PATH
+> and `/learn-from <url | @handle>` works in any session.
 >
-> Next task: make channel runs survive YouTube rate limiting (PLAN §23). The first live
-> channel run hit HTTP 429 on caption downloads and wrote no notes. Three small parts:
-> narrow `--sub-langs "en.*"` to one track with a fallback (today it costs two subtitle
-> requests per video), back off and retry on 429 instead of failing, and have `sla queue`
-> report caption availability from the `_has_auto_en` it already fetches. Then re-run
-> `/learn-from @GregIsenberg` — `_LCeJZFIsd4` and `EoNH3Tn8wYE` were picked but never
-> processed.
+> Two things are waiting. **Four proposals from that batch are unreviewed** and `sla apply`
+> is mine to run, not yours. **The live `learn-from-source` skill has drifted** — the copy
+> in `~/.claude/skills/` predates M5, has no Channels section, and tells the agent to run
+> `sla brief @handle`, which silently reads only the newest video. Syncing it activates a
+> skill, so ask me first.
 >
-> Load-bearing rules: the description is authoritative for entity names and the
-> transcript for reasoning (§15); the agent never emits a shell string (§8 Rule 1); a
-> scan blocks activation, never a download (§18); empty output beats invented output
-> (I3, §7.2); what activates is exactly what was scanned (§21); edits use exact-match
-> replacements that fail loudly (§22); a failure must never look like an absence, because
-> empty results are cached and read back as fact (§23); and I pick what gets read.
+> Then, roughly by value: the drift check promised in §8 Rule 6 (`sla status` does not diff
+> repo copies against live skills — the bug above is exactly what it would catch); the
+> apply-flow gaps in "Known unfinished"; M6 scheduled polling, where the open question is
+> how a run with nobody present respects "I pick what gets read"; and M7, the frontend,
+> which needs a design conversation first.
+>
+> Load-bearing rules: the description is authoritative for entity names and the transcript
+> for reasoning (§15); the agent never emits a shell string (§8 Rule 1); a scan blocks
+> activation, never a download (§18); empty output beats invented output (I3, §7.2) — one
+> of those three notes correctly proposed nothing; what activates is exactly what was
+> scanned (§21); edits use exact-match replacements that fail loudly (§22); a failure must
+> never look like an absence, and a missing field is not a negative answer (§23, §24);
+> when a failure repeats identically, vary the request before blaming the responder (§25);
+> and I pick what gets read.
 >
 > Environment: WSL, checkout on `/mnt/d` (DrvFs — files read 0777, chmod ignored). Use the
 > uv venv at `.venv`; never sudo. Verify on the CI matrix, not just 3.14. `git pull
