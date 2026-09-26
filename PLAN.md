@@ -867,6 +867,11 @@ caught the defect **froze it instead**.
 
 ### Rate limiting is now a first-class failure mode
 
+> **Corrected by §25.** This section reads the 429 as a consequence of request volume.
+> It was not: the refusal is attached to the caption *track* being asked for, and the
+> request count was a coincidence. The observations below are as recorded; the cause
+> named in them is wrong.
+
 Triage costs one metadata request per candidate (10 for `--last 10`), and every processed
 video costs more. `--sub-langs "en.*"` matches both `en` and `en-orig`, so **each video
 spends two subtitle requests where one would do**. After roughly fifteen requests YouTube
@@ -942,10 +947,12 @@ request, three attempts, 43s wall clock — the 25s of backoff plus the calls �
 failure quoting yt-dlp, and **no cache entry written**. The fix works; the block outlasts
 it.
 
-> Backoff rides out a burst. It cannot outwait a refusal measured in hours, and
-> pretending otherwise would just be a slower failure. What actually protects a channel
-> run is spending fewer requests — which is what the first change does — and stopping
-> cleanly when refused, which is what the second one does.
+> Backoff rides out a burst. It cannot outwait this one, and pretending otherwise would
+> just be a slower failure. What actually protects a channel run is spending fewer
+> requests — which is what the first change does — and stopping cleanly when refused,
+> which is what the second one does.
+
+The reason backoff could not help turned out to be nothing to do with waiting: §25.
 
 `/learn-from` is told to stop on a 429 rather than work through the remaining picks:
 every attempt extends the block, and nothing was recorded, so the picks are offered again
@@ -1019,17 +1026,89 @@ watched for. Four checks after the fix, one request each, say it is far longer:
 | 01:24 | ~40 min | refused |
 | 03:52 | ~3 h | refused |
 
-Five caption requests in three hours were not enough to clear it, which rules out a
-short sliding window and makes the mechanism something closer to a per-address penalty.
-The honest reading: **a channel run refused today may stay refused for the rest of the
-day**, and the twenty minutes in §23 was the observation window, not the limit.
+A sixth check the next day, 45 hours in, was refused too. The conclusion drawn here —
+that this was a per-address penalty lasting hours, and that "a channel run refused today
+may stay refused for the rest of the day" — **was wrong**, and §25 says what was actually
+happening. Every one of those six checks asked for the same caption track, which is the
+variable none of them varied.
 
-Three things follow, and they raise the two follow-ups above from nice-to-have to
-required:
+The measurements stand; the inference from them did not. Worth keeping as a record of how
+convincing a sequence of consistent observations can be when they all share a hidden
+constant.
 
-- **Retrying inside a session is pointless once a 429 survives the backoff.** The skill
-  says to stop; it should not offer to wait it out either.
-- **Remembering the refusal stops mattering only for M6 and starts mattering now.** Every
-  probe spends a request to rediscover a block already known about.
-- **Prevention is the whole game.** Halving the subtitle requests is worth more than any
-  retry policy, because the retry policy cannot win this.
+---
+
+## 25. Field notes: the rate limit that was not one (2026-09-25)
+
+Two days of `HTTP 429` on caption downloads, six checks, one wrong conclusion. The
+refusal is attached to the **caption track**, not to the machine, the video, or the
+request count.
+
+### What the evidence actually was
+
+A seventh check split the question up instead of repeating it, one request per answer:
+
+| Request | Result |
+|---|---|
+| metadata for `nglqTHwuZ-8` | OK |
+| its **manual** `en` subtitles | OK, 225 events |
+| its **auto** `en-orig` | OK, 1,232 events |
+| its **auto** `en` | `HTTP 429` |
+| `_LCeJZFIsd4` auto `en` | `HTTP 429` |
+| `_LCeJZFIsd4` auto `en-orig` | OK, **5,915 words** |
+| `EoNH3Tn8wYE` auto `en-orig` | OK, **5,337 words**, one request, 8.8s |
+
+Same machine, same minutes. `en-orig` is the video's own language, fetched directly.
+`en` on an English video is that same speech served through YouTube's translation path —
+a dearer request, and one it refuses outright for an anonymous client. The status code
+says "too many requests"; the behaviour is "not this track, ever".
+
+### Why six consistent observations pointed the wrong way
+
+Every probe re-ran the same failing call. `_LCeJZFIsd4`'s cached metadata predated the
+track names, so it took the legacy path, which asked for `en` — the refused track — every
+single time. Six identical refusals over 45 hours looked like a hardening penalty and were
+one unvaried input.
+
+> **Rule:** when a failure repeats identically, vary the request before concluding
+> anything about the responder. A sequence of consistent observations that share a hidden
+> constant is more convincing than a single one, and no more true. "It is still blocked"
+> was a measurement; "we are blocked" was an inference, and the cheap test that separated
+> them was available the whole time.
+
+The original run in §23 fits this exactly. `--sub-langs "en.*"` matched `en` and `en-orig`;
+yt-dlp asked for the refused one, aborted the whole subtitle step on its error, and never
+reached the track that would have worked. So that run failed on its *first* attempt for
+this reason, not after fifteen requests warmed up a limit.
+
+### What changed in the code
+
+§24's narrowing turns out to have been the fix rather than an optimisation — but only
+because `-orig` leads, which was argued there on translation-quality grounds. It was right
+for a better reason than the one given.
+
+Three things the disproven model had made wrong:
+
+- **A refused track no longer ends the attempt.** `_fetch_captions` used to break out of
+  the loop on a 429, reasoning that the refusal was about the video. It is about the
+  track, so it now tries the next one. This is the change that unblocks both videos.
+- **The fallback loop was dead code.** `_download_track` reported failure by returning
+  `None`, but a non-zero exit raised from `_run` first — and this 429 exits 1. No fallback
+  could ever have run. `_run` grew a `check` parameter; the caption path decides for
+  itself.
+- **The legacy guess asked for the worst track first.** `("en", "en.*")` led with the
+  refused track and then re-requested it inside a pattern. Auto captions now guess
+  `("en-orig", "en")`, human subtitles `("en",)`, and `en.*` is gone: matching two tracks
+  in one request is what §23 was.
+
+Every failure in `_download_track` is now treated as being about that track, so a video
+that is genuinely gone costs one wasted request per remaining track. That is cheaper than
+telling the two apart by parsing yt-dlp's wording, and much cheaper than being wrong about
+it twice.
+
+### What this says about backoff
+
+The retry from §24 never helped here and never could have: it re-asked a question with a
+permanent answer, three times, 25s apart. It stays, because a genuine volume limit is
+still plausible and the cost is bounded — but the thing that actually recovers a refused
+caption download is **asking for a different track**, and that is now what happens first.

@@ -15,11 +15,11 @@ installs.
   videos teach. Notes should serve that, not just summarise.
 
 **[PLAN.md](PLAN.md) is the source of truth.** Decisions D1–D7, improvements I1–I4,
-the security model (§8), and field notes from every milestone (§15–§24).
+the security model (§8), and field notes from every milestone (§15–§25).
 
 ## Status
 
-**v1 (M0–M4) and M5 are complete.** 313 tests, 91% coverage, CI green on 3.10–3.13.
+**v1 (M0–M4) and M5 are complete.** 315 tests, 91% coverage, CI green on 3.10–3.13.
 The whole loop has run for real: video → note → scan → owner's `y` → live skill.
 
 **The first live channel run was blocked by YouTube rate limiting (§23)** — triage
@@ -120,8 +120,12 @@ work:
 13. **A missing field is not a negative answer** (§24). Triage's `captions` column has a
     fourth value, `unknown`, because metadata cached before the check existed does not
     say "none" — it says nothing. Same rule as 12, one layer up.
-14. **Retry only what asking again can fix** (§24). A `429` is a wait; everything else is
-    final, and re-asking spends the budget that caused the failure.
+14. **Retry only what asking again can fix** (§24). A `429` is sometimes a wait;
+    everything else is final, and re-asking spends the budget that caused the failure.
+15. **When a failure repeats identically, vary the request before blaming the responder**
+    (§25). Six identical 429s over 45 hours read as a hardening block and were one
+    unvaried input: the same refused caption track, asked for six times. "It is still
+    failing" is a measurement; "we are blocked" is an inference.
 
 ## Fixtures — all three committed under `tests/fixtures/`
 
@@ -135,11 +139,12 @@ Notes for all three are in `/mnt/d/LearningVault/Sources/`.
 
 ## What to build next
 
-**Rate limiting is handled as far as it can be (§24).** Caption downloads cost one
-subtitle request instead of two, a `429` is retried with backoff, and `sla queue` reports
-caption availability. What remains is not fixable from here: backoff rides out a burst,
-not a block that has now been measured in hours. Spending fewer requests is the actual
-defence, and a run refused today may stay refused for the rest of it.
+**Caption downloads work again (§24–§25).** One subtitle request per video instead of
+two, `en-orig` preferred over the translated `en` track that YouTube refuses outright, a
+fall-through to the next track when one is refused, backoff for a genuine 429, and a
+`captions` column in `sla queue`. The "rate limit" that blocked the first channel run was
+a per-track refusal wearing a 429; both blocked videos read in one request each once the
+right track was asked for.
 
 Roughly by value:
 

@@ -114,13 +114,17 @@ a whole channel on your own initiative.
    Keep one transcript in context at a time — render one note before building the
    next brief. Several transcripts at once crowd out the reading each one needs.
 
-   **If a brief fails with `HTTP 429`, stop.** YouTube is refusing caption
-   downloads; `sla` has already retried with backoff and cached nothing. Do not
-   write a note from the description alone, and do not keep trying the remaining
-   picks — every attempt extends the block. Report which videos were left
-   unprocessed and that the run can resume unchanged once the limit clears — which
-   has taken hours, not minutes, so do not offer to wait it out in the same session.
-   Nothing was recorded, so they will be offered again.
+   **If a brief fails, stop and report it — never write the note anyway.** A note
+   built from the description alone, with nothing marking the transcript as missing,
+   is the outcome the whole design exists to prevent. `sla` caches nothing on a
+   failure, so the video can simply be read again later; nothing was recorded, so
+   it will be offered again.
+
+   An `HTTP 429` here does **not** reliably mean "wait". YouTube refuses the
+   translated `en` auto-caption track indefinitely while serving `en-orig` normally,
+   and `sla` already tries each listed track in turn (§25). If every track was
+   refused, say so and move on — do not offer to wait it out, and do not retry the
+   remaining picks in a loop.
 
 4. **Digest** the ones you processed:
 

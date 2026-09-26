@@ -6,7 +6,7 @@
 > vault note with validated proposals; `/learn-from @channel` triages a creator's
 > latest uploads for you to pick from; `sla apply` reviews proposals one at a time
 > behind a SkillSpector scan. Nothing is ever applied without you saying yes.
-> 313 tests, 91% coverage, CI on Python 3.10–3.13. Architecture is in
+> 315 tests, 91% coverage, CI on Python 3.10–3.13. Architecture is in
 > [PLAN.md](PLAN.md); to pick the work up cold, read [HANDOVER.md](HANDOVER.md).
 
 ---
@@ -272,13 +272,13 @@ That is the design working, not failing.
 2. **ASR mangles product names.** Mitigated by reading the human-typed description, not
    solved. Low-confidence names are flagged in the note.
 3. **No members-only or paywalled content.**
-4. **YouTube rate-limits caption downloads.** Triaging a channel and then reading
-   several videos can earn an `HTTP 429` that has been observed to last hours. The pipeline
-   spends half the subtitle requests it used to, retries a 429 with backoff, says so
-   plainly when it gives up, and caches nothing — so a run after the limit clears just
-   works. Backoff rides out a burst; it cannot outwait a block measured in tens of
-   minutes (PLAN §23). Tune it with `ytdlp_attempts` and `ytdlp_backoff_seconds` in
-   `config.json`.
+4. **YouTube refuses some caption tracks outright.** A request for the translated `en`
+   auto-caption track returns `HTTP 429` indefinitely, while `en-orig` — the same speech,
+   served as the video's own language — downloads normally. The pipeline asks for one
+   track at a time, prefers `en-orig`, and falls through to the next track when one is
+   refused (PLAN §25). Genuine volume limits are retried with backoff, tunable via
+   `ytdlp_attempts` and `ytdlp_backoff_seconds` in `config.json`. Nothing is ever cached
+   on a failure, so a failed read can simply be run again.
 5. **Quality is bounded by the creator.** This faithfully relays what a video claims.
    It does not independently verify that the advice is any good.
 

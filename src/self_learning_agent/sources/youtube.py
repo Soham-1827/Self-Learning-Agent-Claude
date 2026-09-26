@@ -23,8 +23,12 @@ _URL_ID_PATTERNS = (
 _URL_IN_TEXT = re.compile(r"https?://[^\s<>\)\]\}\"']+")
 # "en", "en-orig", "en-GB", "en_US" — but not "eng" or "enigma".
 _EN_TRACK = re.compile(r"^en(?![A-Za-z])")
-# Every English track, if the metadata recording them predates this code (§23).
-_LEGACY_TRACKS = ("en", "en.*")
+# Metadata cached before the track names were recorded has to be guessed for.
+# `en.*` is deliberately absent: matching two tracks in one request is what §23
+# was, and the refused `en` is one of the two it matched. `-orig` is an
+# auto-caption thing, so asking for it on human subtitles only wastes a request.
+_LEGACY_AUTO_TRACKS = ("en-orig", "en")
+_LEGACY_MANUAL_TRACKS = ("en",)
 _RATE_LIMITED = re.compile(r"\b429\b|too many requests", re.IGNORECASE)
 # Each retry waits this much longer than the last: 5s, then 20s by default,
 # and never more than MAX_BACKOFF_SECONDS however many attempts are configured.
@@ -158,35 +162,42 @@ class YouTubeSource:
 
         reason = "no output"
         for track in _caption_tracks(meta, manual=manual):
-            payload, stderr = self._download_track(url, flag, track)
+            payload, reason = self._download_track(url, flag, track)
             if payload is not None:
                 payload["_quality"] = (
                     TextQuality.MANUAL_CAPTIONS if manual else TextQuality.AUTO_CAPTIONS
                 )
                 return payload
-            reason = _error_summary(stderr)
-            if _is_rate_limited(stderr):
-                # The refusal is about the video, not the track. Asking for
-                # another one spends a request to be refused again.
-                break
         # Metadata said captions exist, so this is a failure, not an absence.
         raise YouTubeError(f"captions for {video_id} were not downloaded: {reason}")
 
     def _download_track(self, url: str, flag: str, track: str):
-        """One subtitle request. Returns (payload, stderr); payload is None on failure."""
+        """One subtitle request. Returns (payload, reason); payload is None if it failed.
+
+        Every failure is treated as being about this track, so the caller tries
+        the next one. That is what §25 cost two days to learn: YouTube refuses
+        the translated `en` auto-caption with `HTTP 429` while serving `en-orig`
+        from the same video in the same minute, and a 429 that looked like a
+        throttle was a per-track refusal.
+
+        A video that is genuinely gone therefore costs one wasted request per
+        remaining track. That is cheaper than telling the two apart by parsing
+        yt-dlp's wording, and far cheaper than being wrong about it again.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "cap"
-            _, stderr = self._run([
+            _, stderr, code = self._run([
                 "--skip-download", flag, "--sub-langs", track,
                 "--sub-format", "json3", "-o", str(out), url,
-            ], with_stderr=True)
+            ], with_stderr=True, check=False)
             files = sorted(Path(tmp).glob("*.json3"))
             if not files:
-                return None, stderr
-            return json.loads(files[0].read_text(encoding="utf-8")), stderr
+                detail = _error_summary(stderr)
+                return None, detail if code == 0 else f"yt-dlp failed ({code}): {detail}"
+            return json.loads(files[0].read_text(encoding="utf-8")), ""
 
-    def _run(self, args: list[str], *, with_stderr: bool = False):
-        """Run yt-dlp; return stdout, or (stdout, stderr) when asked.
+    def _run(self, args: list[str], *, with_stderr: bool = False, check: bool = True):
+        """Run yt-dlp; return stdout, or (stdout, stderr, returncode) when asked.
 
         yt-dlp can print an ERROR and still exit 0 — a rate-limited subtitle
         download does exactly that — so a caller that cares must read stderr,
@@ -211,11 +222,13 @@ class YouTubeSource:
             if attempt == attempts or not _is_rate_limited(proc.stderr):
                 break
             time.sleep(_backoff(self.config.ytdlp_backoff_seconds, attempt))
-        if proc.returncode != 0:
+        if check and proc.returncode != 0:
             raise YouTubeError(
                 f"yt-dlp failed ({proc.returncode}): {_error_summary(proc.stderr)}"
             )
-        return (proc.stdout, proc.stderr) if with_stderr else proc.stdout
+        if with_stderr:
+            return proc.stdout, proc.stderr, proc.returncode
+        return proc.stdout
 
     def _build(self, video_id: str, meta: dict, captions: dict) -> SourceDocument:
         segments = parse_json3(captions)
@@ -291,7 +304,9 @@ def _caption_tracks(meta: dict, *, manual: bool) -> tuple[str, ...]:
     applies the same one-request-first rule to an older cache entry.
     """
     recorded = meta.get("_en_manual" if manual else "_en_auto")
-    return tuple(recorded) if recorded else _LEGACY_TRACKS
+    if recorded:
+        return tuple(recorded)
+    return _LEGACY_MANUAL_TRACKS if manual else _LEGACY_AUTO_TRACKS
 
 
 def _error_lines(stderr: str | None) -> list[str]:

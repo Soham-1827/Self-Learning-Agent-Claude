@@ -385,15 +385,36 @@ def test_a_track_that_yields_nothing_falls_back_to_the_next(source, monkeypatch)
     assert result["events"] == CAPTIONS["events"]
 
 
-def test_a_rate_limit_does_not_burn_the_fallback_track(source, monkeypatch):
-    """429 refuses the video, not the track: asking again only spends requests."""
+def test_a_track_youtube_refuses_falls_through_to_the_next(source, monkeypatch):
+    """A 429 names a track, not a video (§25).
+
+    YouTube refuses the translated `en` auto-caption with 429 while serving
+    `en-orig` from the same video in the same minute. Treating that refusal as
+    final is what made two videos look unreadable for two days.
+    """
+    def handler(cmd):
+        if cmd[cmd.index("--sub-langs") + 1] == "en-orig":
+            return _Proc(1, stderr="ERROR: Unable to download video subtitles for "
+                                   "'en-orig': HTTP Error 429: Too Many Requests")
+        _write_json3(cmd, CAPTIONS)
+        return _Proc(0)
+
+    fake = _install(monkeypatch, handler)
+    result = source._fetch_captions(
+        VIDEO, {"_has_auto_en": True, "_en_auto": ["en-orig", "en"]})
+
+    assert _capture_langs(fake) == ["en-orig", "en"]
+    assert result["events"] == CAPTIONS["events"]
+
+
+def test_every_track_refused_raises_quoting_youtube(source, monkeypatch):
     fake = _install(monkeypatch, lambda cmd: _Proc(
-        0, stderr="ERROR: Unable to download video subtitles for 'en-orig': "
+        1, stderr="ERROR: Unable to download video subtitles for 'x': "
                   "HTTP Error 429: Too Many Requests"))
 
     with pytest.raises(YouTubeError, match="429"):
         source._fetch_captions(VIDEO, {"_has_auto_en": True, "_en_auto": ["en-orig", "en"]})
-    assert _capture_langs(fake) == ["en-orig"]
+    assert _capture_langs(fake) == ["en-orig", "en"]   # both tried before giving up
 
 
 def test_every_listed_track_failing_raises_rather_than_reading_as_absence(source, monkeypatch):
@@ -404,19 +425,34 @@ def test_every_listed_track_failing_raises_rather_than_reading_as_absence(source
     assert _capture_langs(fake) == ["en-orig", "en"]
 
 
-def test_metadata_cached_before_track_names_existed_still_narrows(source, monkeypatch):
-    """Old cache entries carry only the flags — ask for `en`, keep `en.*` as the fallback."""
+def test_metadata_cached_before_track_names_existed_asks_for_the_served_track_first(
+    source, monkeypatch
+):
+    """Old cache entries carry only the flags, so the order has to be a good guess.
+
+    `en.*` is gone: matching two tracks in one request is what §23 was, and the
+    refused `en` is one of the two it matched.
+    """
     def handler(cmd):
-        if cmd[cmd.index("--sub-langs") + 1] == "en":
-            return _Proc(0, stderr="ERROR: Requested format is not available")
         _write_json3(cmd, CAPTIONS, lang="en-orig")
         return _Proc(0)
 
     fake = _install(monkeypatch, handler)
     result = source._fetch_captions(VIDEO, {"_has_auto_en": True})
 
-    assert _capture_langs(fake) == ["en", "en.*"]
+    assert _capture_langs(fake) == ["en-orig"]
     assert result["_quality"] == TextQuality.AUTO_CAPTIONS
+
+
+def test_legacy_human_captions_ask_only_for_en(source, monkeypatch):
+    """`-orig` is an auto-caption thing; asking for it on manual subs wastes a request."""
+    def handler(cmd):
+        _write_json3(cmd, CAPTIONS)
+        return _Proc(0)
+
+    fake = _install(monkeypatch, handler)
+    source._fetch_captions(VIDEO, {"_has_manual_en": True})
+    assert _capture_langs(fake) == ["en"]
 
 
 def test_human_captions_choose_from_the_manual_tracks(source, monkeypatch):
