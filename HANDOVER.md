@@ -15,7 +15,7 @@ installs.
   videos teach. Notes should serve that, not just summarise.
 
 **[PLAN.md](PLAN.md) is the source of truth.** Decisions D1–D7, improvements I1–I4,
-the security model (§8), and field notes from every milestone (§15–§26).
+the security model (§8), and field notes from every milestone (§15–§27).
 
 ## Status
 
@@ -147,6 +147,18 @@ fall-through to the next track when one is refused, backoff for a genuine 429, a
 a per-track refusal wearing a 429; both blocked videos read in one request each once the
 right track was asked for.
 
+**Then make it installable by a stranger (§27).** Three findings, all small: there is no
+`.claude-plugin/marketplace.json`, so this cannot be installed as a plugin at all and the
+README's `cp` commands bake in drift; SkillSpector supports `anthropic` and `ollama`, so
+the documented OpenAI key is a second-vendor signup nobody needs; and
+`self-learning-agent` is free on PyPI, which turns clone + venv + editable install +
+symlink into one `uv tool install`. Then test it the way a stranger would — clean
+`SLA_HOME`, nothing in `~/.claude`, nothing on PATH. It has only ever run on WSL.
+
+**Hosting is scoped and not recommended yet (§27).** ~$0.20 a note, and the inventory it
+would have to drop is 48–68% of every brief *and* the part that made the notes good.
+Host a static showcase of pre-rendered notes instead.
+
 Roughly by value:
 
 - **Close the apply-flow gaps** (below) — small, and they are the last rough edges in a
@@ -175,11 +187,13 @@ opt-in or always-confirm.
   `EoNH3Tn8wYE` `p1` (clone the WebMCP reference repo, `medium`) and `p2` (Chrome flags,
   `high`/manual, and one of them opens remote debugging on the browser holding your
   sessions). Both notes are `pending-review`; `sla apply` is the owner's to run.
-- **The live `learn-from-source` skill has drifted from the repo copy.** The installed one
-  at `~/.claude/skills/` is dated 2026-09-09 and predates M5 — no Channels section, and it
-  tells the agent to run `sla brief @handle`, which silently takes only the newest video.
-  A session invoking `/learn-from @handle` gets the stale procedure. This is the drift
-  check above, arriving as a real bug rather than a hypothetical.
+- **The install instructions cause drift.** `cp -r skills/... ~/.claude/skills/` is a
+  snapshot with no update path, and it bit this machine: the live skill *and* command were
+  both from 2026-09-09, predating M5, so `/learn-from @handle` had neither the channel
+  routing nor the Channels procedure, and the skill still told the agent to "give 3–5"
+  project ideas — a target count, which is an instruction to invent. Both were copied over
+  on 2026-10-01, but **every user who follows the README inherits the same trap**. The fix
+  is a `.claude-plugin/marketplace.json` so this installs and updates as a plugin (§27).
 - Triage's class guess is heuristic and misfires at the margin (§22, §26).
 - Coverage gap is mostly `cli.py` at 70%.
 - Vision on video frames is deferred.

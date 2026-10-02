@@ -1183,3 +1183,136 @@ one video without saying so. The repo copy was followed here instead.
 
 Not fixed here. Syncing it activates a skill, and what activates is the owner's call
 (§21, D7).
+
+---
+
+## 27. Scoping M7: what a hosted version actually costs (2026-10-01)
+
+The ask is "make it live so people use it". This section is the honest scope of the hosted
+option, measured rather than estimated, so the decision is against numbers.
+
+### The seam is already the right shape
+
+Synthesis is the only step a hosted version has to replace, and the architecture already
+has a hole exactly where the model goes:
+
+```
+build_brief(doc, inventory) -> dict   ->   [ the agent ]   ->   parse_result(raw)
+```
+
+Everything downstream of `parse_result` — validation, risk re-derivation, rendering,
+the ledger — is written and tested. **Hosting needs one new module**, not a rewrite:
+brief in, validated synthesis JSON out. That is the good news, and it is real.
+
+The bad news is that the new module's quality *is* the product, and what it replaces is
+not a prompt. It is a 161-line skill, a system prompt, and whatever judgment the session
+brings. The three notes written on 2026-09-25 each required reading a full transcript,
+cross-checking it against the description, reading 271 installed skill descriptions, and
+catching things a one-shot call will not: a `$200` / `$2,000` disagreement between
+transcript and description, and a guest named three different ways across both. Expect a
+single API call to be worse, and expect prompt iteration to be most of the work.
+
+The three committed fixtures are an eval set for exactly this, which is the one piece of
+groundwork already done.
+
+### Measured cost per note
+
+Briefs for all six processed videos, regenerated from cache. Tokens at ~4 chars/token:
+
+| | words | brief, local | brief, hosted | inventory share |
+|---|---|---|---|---|
+| `UpE5yuhwXXc` | 3,486 | 73 KB | 24 KB | 68% |
+| `9_SZFIW7tus` | 4,150 | 81 KB | 31 KB | 61% |
+| `84q4WA3kA8Q` | 4,381 | 84 KB | 34 KB | 60% |
+| `EoNH3Tn8wYE` | 5,337 | 87 KB | 37 KB | 57% |
+| `_LCeJZFIsd4` | 5,915 | 92 KB | 42 KB | 54% |
+| `gPPT4WpVRZ4` | 9,758 | 103 KB | 53 KB | 48% |
+
+- **Hosted brief: ~6,000 to ~13,600 input tokens**, median ~9,600.
+- **Output: ~3,800 tokens** for a full synthesis (measured from the one written by hand).
+- Add reasoning tokens, which for work of this kind are not small.
+
+So roughly **10k in, 4k out, plus thinking, per note**. At current mid-tier model prices
+that lands near **$0.20 a note**; a top-tier model is several times that, a small model a
+fraction. Check live pricing before trusting the figure — the token counts are the part
+that is measured.
+
+That makes 1,000 notes a month a ~$200 bill, and one visitor pasting a channel's hundred
+videos a ~$20 visitor. Any hosted version needs a cap before it needs a frontend.
+
+### The inventory is 57% of the brief, and it is the part worth keeping
+
+The single most interesting number above. Dropping the inventory halves the brief — and
+removes the check that made the Software Factory note good. That note proposes *one* thing
+because three of the workflow's four steps were already installed (§26). Without an
+inventory it would have recommended all four, to an owner who owns three.
+
+This is the fork inside the hosted option, and it is not a detail:
+
+| | Generic (no inventory) | Personalised |
+|---|---|---|
+| Cost | cacheable by video id, so popular videos are free after the first | full price per user per video |
+| Quality | loses "you already have this" | keeps it |
+| Privacy | nothing of the user's is sent | user uploads their installed-skills list |
+| Artifact | shareable, publishable | belongs to one person |
+
+Generic notes are cheap because they are impersonal, and impersonal is exactly what the
+M2 inventory check exists to fix. **A hosted generic note is a demo of the local product,
+not a replacement for it.**
+
+### What hosting cannot do at all
+
+The approval gate writes skills into *your* `~/.claude/skills` and scans before activating.
+A web page cannot do either. Hosted output is therefore a note plus proposed skills as
+downloadable files; applying them still needs the local install. §8, D7, §18, §21 and the
+whole SkillSpector path do not cross the network.
+
+So hosted is a funnel. That is a legitimate thing to build, as long as it is built as one.
+
+### Operational risk, with evidence
+
+Running yt-dlp server-side is the main ongoing cost, and this repo has unusually direct
+evidence about it:
+
+- YouTube refuses specific caption tracks indefinitely, and did so for 45 hours (§25).
+- A burst of requests earned a 429 that looked permanent (§23).
+
+One shared server address doing that for everyone is the worst case for both. Mitigations,
+in order of value: **cache synthesis by video id** (the biggest lever, and only available
+in the generic variant), fail loudly rather than silently (already true), and expect to
+need request pacing and possibly egress rotation — which is maintenance, not a build step.
+Separately, yt-dlp breaks whenever YouTube changes; a hosted service that does not track
+its releases dies quietly, where a local user just upgrades.
+
+### Content posture
+
+Notes quote a creator's video substantially, by design — the evidence quotes are what make
+a proposal checkable. Personal vault notes are one thing; a service that stores and serves
+transcript-derived notes is another. Design constraints if this ships: keep notes private
+to the requester, do not build a public index of them, and keep the source link and
+attribution that the note template already carries.
+
+### Effort, honestly
+
+| Phase | Work | Size |
+|---|---|---|
+| A | synthesis-as-a-module, evaluated against the three fixtures | days to weeks, nearly all prompt iteration |
+| B | paste-a-URL frontend, job queue, note storage, auth, rate limit, cache | about a week |
+| C | yt-dlp failure handling, pacing, monitoring, cost caps | ongoing, never finished |
+
+### Recommendation
+
+**Do not host the pipeline yet.** The numbers say a hosted generic note costs real money
+per visitor and throws away the half of the brief that made the notes worth keeping, while
+still not being able to apply anything. The audience for this is Claude Code users, and
+they can be reached by making the local plugin install in two commands — a day of work and
+no running cost (§28 when it is done).
+
+**Host the showcase instead.** Pre-rendered notes, no inference, no YouTube calls, nothing
+to abuse, and it answers the only question a visitor actually has: *is the output any
+good?* Nobody installs a CLI to find out.
+
+If the hosted generator is built later, the cheapest shape worth shipping is: generic notes
+cached by video id forever, a mid-tier model, a hard per-user daily cap, developer sign-in
+to filter bots, and copy that says plainly it is a preview of what the plugin does on your
+own machine.
