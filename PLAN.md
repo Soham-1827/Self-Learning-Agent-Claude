@@ -1450,3 +1450,26 @@ The working rule, for whoever edits a skill next:
 For a fast iteration loop, uninstall and reinstall instead of bumping. What must not happen
 is editing the repo, assuming the live skill changed, and being wrong about it for three
 weeks.
+
+### Released 0.2.0, and verified from the outside
+
+Pushed, tagged `self-learning-agent--v0.2.0`, then this machine was switched onto the path
+a stranger uses — hand copies deleted, folder marketplace replaced by
+`Soham-1827/Self-Learning-Agent-Claude` — and the result checked rather than assumed:
+
+| Check | Result |
+|---|---|
+| plugin installed from GitHub | 0.2.0, source GitHub, 2 components |
+| skill shipped by that plugin | byte-identical to the repo, Channels section present |
+| `uv tool install git+...` | `_en_auto` present **3×**, where the pre-push install had **0** |
+| that binary, empty cache, real network | 1,772 caption events in 9s, `auto_captions`, tracks `['en-orig', 'en']` |
+| the owner's own cache, ledger and vault | untouched — 6 processed, both notes still `pending-review` |
+
+The second-to-last row is the one worth keeping. Before the push, every install instruction
+in the README was correct and delivered software that could not fetch a transcript. The
+difference between those two states was nine commits sitting on one machine, which is its
+own lesson about what "done" means for something meant to be used by other people.
+
+0.1.0 was retired rather than reused: it is what the invalid manifest claimed for five
+milestones, and anything still holding it would have been told by `claude plugin update`
+that it was already current.

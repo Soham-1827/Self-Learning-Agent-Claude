@@ -193,6 +193,10 @@ opt-in or always-confirm.
   `EoNH3Tn8wYE` `p1` (clone the WebMCP reference repo, `medium`) and `p2` (Chrome flags,
   `high`/manual, and one of them opens remote debugging on the browser holding your
   sessions). Both notes are `pending-review`; `sla apply` is the owner's to run.
+- **This machine now installs from GitHub like everyone else.** The hand copies are gone
+  and the marketplace points at `Soham-1827/Self-Learning-Agent-Claude`, so your own edits
+  reach you only after a push plus a version bump. That is deliberate — it means you test
+  the path strangers use — but it does make the dev loop slower than editing in place.
 - **Editing a skill does not change the installed plugin until the version bumps.** The
   plugin is a versioned copy in `~/.claude/plugins/cache/.../0.1.0/`, and
   `claude plugin update` compares versions, so a repo edit alone reaches nobody. Bump
@@ -203,9 +207,6 @@ opt-in or always-confirm.
   there *and* the plugin now provides both. Remove the hand copies so there is one source
   and the staleness trap cannot come back — that trap is what gave `/learn-from @handle`
   a pre-M5 procedure for three weeks (§26).
-- **The published `main` is behind and ships broken caption fetching.** Every install
-  command in the README is correct and currently delivers the pre-§25 code, which asks for
-  the caption track YouTube refuses. Pushing is the launch (§28).
 - Triage's class guess is heuristic and misfires at the margin (§22, §26).
 - Coverage gap is mostly `cli.py` at 70%.
 - Vision on video frames is deferred.
