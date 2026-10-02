@@ -192,6 +192,11 @@ opt-in or always-confirm.
   `EoNH3Tn8wYE` `p1` (clone the WebMCP reference repo, `medium`) and `p2` (Chrome flags,
   `high`/manual, and one of them opens remote debugging on the browser holding your
   sessions). Both notes are `pending-review`; `sla apply` is the owner's to run.
+- **Editing a skill does not change the installed plugin until the version bumps.** The
+  plugin is a versioned copy in `~/.claude/plugins/cache/.../0.1.0/`, and
+  `claude plugin update` compares versions, so a repo edit alone reaches nobody. Bump
+  `version` in both manifests (`claude plugin tag` checks they agree), then
+  `marketplace update` and `plugin update` (§28).
 - **Two copies of the skill are live on this machine.** The hand copies in
   `~/.claude/skills/learn-from-source` and `~/.claude/commands/learn-from.md` are still
   there *and* the plugin now provides both. Remove the hand copies so there is one source

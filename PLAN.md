@@ -1424,3 +1424,29 @@ YouTube refuses.
 > Anyone who installs from this repository right now gets a tool that cannot fetch a
 > transcript. Every install instruction in this README is correct and every one of them
 > currently delivers broken software. Pushing is the launch.
+
+### The plugin cache is version-gated, which is the drift problem wearing a name tag
+
+Installing does not reference the checkout. It copies into
+`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`, and `claude plugin update`
+compares versions:
+
+```
+✔ self-learning-agent is already at the latest version (0.1.0).
+```
+
+So **editing `skills/learn-from-source/SKILL.md` does not reach the installed plugin until
+the version changes.** That is the §26 trap again — with two crucial differences: there is
+a version to compare, and there is a command that acts on it. Silent staleness has become
+visible staleness.
+
+The working rule, for whoever edits a skill next:
+
+1. bump `version` in **both** `.claude-plugin/plugin.json` and the marketplace entry —
+   `claude plugin tag` exists to validate that those two agree;
+2. `claude plugin marketplace update self-learning-agent`;
+3. `claude plugin update self-learning-agent`, then restart the session.
+
+For a fast iteration loop, uninstall and reinstall instead of bumping. What must not happen
+is editing the repo, assuming the live skill changed, and being wrong about it for three
+weeks.
