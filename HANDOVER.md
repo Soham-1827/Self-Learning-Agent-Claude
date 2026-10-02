@@ -19,7 +19,8 @@ the security model (§8), and field notes from every milestone (§15–§28).
 
 ## Status
 
-**v1 (M0–M4) and M5 are complete.** 315 tests, 91% coverage, CI green on 3.10–3.13.
+**v1 (M0–M4) and M5 are complete, released as 0.2.0.** 315 tests, 91% coverage, CI
+green on 3.10–3.13, and the suite also passes against the *installed* package (§28).
 The whole loop has run for real: video → note → scan → owner's `y` → live skill.
 
 **A channel run has now completed end to end (§26).** `@GregIsenberg`, 10 triaged, owner
