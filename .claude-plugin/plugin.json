@@ -1,6 +1,6 @@
 {
   "name": "self-learning-agent",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Turn a YouTube video or channel into an Obsidian note worth keeping, plus setup proposals you approve one at a time before anything is installed",
   "author": {
     "name": "Soham-1827",

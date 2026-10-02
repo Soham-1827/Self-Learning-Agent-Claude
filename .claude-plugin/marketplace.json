@@ -9,7 +9,7 @@
     {
       "name": "self-learning-agent",
       "source": "./",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "description": "Point it at a YouTube video or a channel and get an Obsidian note worth keeping, plus a short list of setup actions. Nothing installs without your explicit yes, and generated skills are security-scanned before they can activate. Channels are triaged from metadata first, so you pick what gets read.",
       "author": {
         "name": "Soham-1827",

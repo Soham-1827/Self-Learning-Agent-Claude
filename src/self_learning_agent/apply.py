@@ -70,16 +70,19 @@ def staging_dir(config: Config) -> Path:
     return path
 
 
-def stage_skill(proposal: Proposal, root: Path) -> Path:
-    """Write a proposed skill to ``root/generated-skills/<name>/SKILL.md``.
+def stage_skill(proposal: Proposal, staged_dir: Path) -> Path:
+    """Write a proposed skill to ``staged_dir/<name>/SKILL.md``.
 
-    With the repo root this is the reviewable copy (D7): diffable in git, loaded
-    by no agent until activation. With a scratch directory it is the copy that
-    gets scanned. The mode is set explicitly either way, although a DrvFs mount
-    silently ignores it — which is why scans never read the repo copy.
+    `staged_dir` is the directory that holds staged skills, passed in whole
+    rather than joined here, so the caller decides where it lives:
+    `Config.generated_skills_dir` for the reviewable copy (D7) — diffable in git
+    when run from a checkout, loaded by no agent until activation — or a scratch
+    directory for the copy that gets scanned. The mode is set explicitly either
+    way, although a DrvFs mount silently ignores it, which is why scans never
+    read the reviewable copy.
     """
     name = proposal.action["name"]
-    target = Path(root) / "generated-skills" / name
+    target = Path(staged_dir) / name
     target.mkdir(parents=True, exist_ok=True)
     skill_file = target / "SKILL.md"
     skill_file.write_text(proposal.action["content"], encoding="utf-8")
@@ -107,15 +110,15 @@ def _run(cmd: list[str], cwd: Path | None = None) -> tuple[bool, str]:
     return True, " ".join(cmd)
 
 
-def _activate_skill(proposal: Proposal, config: Config, repo_root: Path) -> AppliedRecord:
+def _activate_skill(proposal: Proposal, config: Config, staged_dir: Path) -> AppliedRecord:
     name = proposal.action["name"]
-    source = Path(repo_root) / "generated-skills" / name
+    source = Path(staged_dir) / name
     target = CLAUDE_HOME / "skills" / name
     if target.exists():
         return _record(proposal, False, f"{target} already exists — not overwritten")
 
-    # What activates must be exactly what was scanned. The repo copy exists to be
-    # reviewed, and can be edited between the scan and the prompt.
+    # What activates must be exactly what was scanned. The staged copy exists to
+    # be reviewed, and can be edited between the scan and the prompt.
     if problem := _unscanned_changes(proposal, source):
         return _record(proposal, False, problem)
 
@@ -205,7 +208,7 @@ def _record(p: Proposal, ok: bool, detail: str, undo: str | None = None) -> Appl
 
 
 def apply_decision(
-    decision: Decision, config: Config, repo_root: Path
+    decision: Decision, config: Config, staged_dir: Path
 ) -> AppliedRecord:
     """Perform one approved action. Blocked decisions are never executed."""
     proposal = decision.proposal
@@ -213,7 +216,7 @@ def apply_decision(
         return _record(proposal, False, "blocked by the gate — not applied")
 
     if proposal.kind == "skill":
-        return _activate_skill(proposal, config, repo_root)
+        return _activate_skill(proposal, config, staged_dir)
     if proposal.kind == "repo_clone":
         return _clone_repo(proposal, config)
     if proposal.kind == "package":

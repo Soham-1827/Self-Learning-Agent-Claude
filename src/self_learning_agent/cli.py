@@ -174,7 +174,9 @@ def _apply_status(proposals, applied: set[str]) -> str:
 
 def cmd_apply(args) -> int:
     cfg = config_mod.load()
-    repo_root = Path(__file__).resolve().parents[2]
+    # Not derived from where this module sits: in an installed copy that is a
+    # library directory, so the reviewable copy landed inside the tool's own venv.
+    staged_dir = cfg.generated_skills_dir
 
     source = YouTubeSource(cfg, Cache(cfg.cache_dir))
     source_id = source.resolve(args.ref)[0]
@@ -221,9 +223,9 @@ def cmd_apply(args) -> int:
     for proposal in proposals:
         staged = None
         if proposal.kind == "skill":
-            staged = stage_skill(proposal, Path(scratch.name))
+            staged = stage_skill(proposal, Path(scratch.name) / "generated-skills")
             if not args.dry_run:
-                stage_skill(proposal, repo_root)  # the reviewable copy (D7)
+                stage_skill(proposal, staged_dir)  # the reviewable copy (D7)
         verdict = None
         error = None
         if requires_scan(proposal) and scanner_ready:
@@ -264,7 +266,7 @@ def cmd_apply(args) -> int:
             if answer not in ("y", "yes"):
                 print("  skipped")
                 continue
-        record = apply_decision(decision, cfg, repo_root)
+        record = apply_decision(decision, cfg, staged_dir)
         print(f"  {'ok' if record.ok else 'failed'}: {record.detail}")
         records.append(record)
 

@@ -23,10 +23,27 @@ class Config:
     # (§23). Retrying costs a wait; not retrying costs the whole run.
     ytdlp_attempts: int = 3
     ytdlp_backoff_seconds: float = 5.0
+    # Where a proposed skill is staged for review before it may activate (D7).
+    # None means "work it out" — see `generated_skills_dir`.
+    generated_skills_path: Path | None = None
 
     @property
     def cache_dir(self) -> Path:
         return self.home / "cache"
+
+    @property
+    def generated_skills_dir(self) -> Path:
+        """Where a proposed skill is written for review before it can activate (D7).
+
+        A source checkout is preferred, because there the staged copy is diffable
+        in git, which is the whole point of staging it. An installed copy has no
+        repository, so staging belongs under `home` — somewhere the owner can
+        actually look at and that survives an upgrade.
+        """
+        if self.generated_skills_path is not None:
+            return self.generated_skills_path
+        checkout = _checkout_root()
+        return (checkout or self.home) / "generated-skills"
 
     @property
     def ledger_path(self) -> Path:
@@ -44,6 +61,20 @@ class Config:
     def resolved(self) -> "Config":
         """Fill in anything that must be discovered on this machine."""
         return replace(self, ytdlp_cmd=self.ytdlp_cmd or discover_ytdlp())
+
+
+def _checkout_root() -> Path | None:
+    """The repository root when running from a source checkout, else None.
+
+    An editable install leaves this module inside the checkout, so `parents[2]`
+    is the repo. A normal install leaves it in site-packages, where `parents[2]`
+    is a library directory that the next `uv tool upgrade` deletes — depth alone
+    cannot tell those apart, so this asks for evidence of a repository.
+    """
+    root = Path(__file__).resolve().parents[2]
+    if (root / ".git").is_dir() and (root / "pyproject.toml").is_file():
+        return root
+    return None
 
 
 def discover_ytdlp() -> tuple[str, ...]:
@@ -113,5 +144,10 @@ def load(home: Path | None = None) -> Config:
         ytdlp_attempts=max(1, int(data.get("ytdlp_attempts", cfg.ytdlp_attempts))),
         ytdlp_backoff_seconds=max(
             0.0, float(data.get("ytdlp_backoff_seconds", cfg.ytdlp_backoff_seconds))
+        ),
+        generated_skills_path=(
+            Path(data["generated_skills_path"]).expanduser()
+            if data.get("generated_skills_path")
+            else cfg.generated_skills_path
         ),
     )

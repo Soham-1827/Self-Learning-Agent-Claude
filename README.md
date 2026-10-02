@@ -142,7 +142,11 @@ Then point it at a vault, by writing `~/.self-learning-agent/config.json`:
 ```
 
 Defaults work without it: `~/LearningVault/Sources`, and `~/.self-learning-agent`
-for the cache and ledger (override with `SLA_HOME`).
+for the cache, ledger, and the staging folder where a proposed skill is written for
+review before it can activate (D7). That folder is
+`~/.self-learning-agent/generated-skills/` for an installed copy, or the checkout's
+own `generated-skills/` when you run from source, so it stays diffable in git.
+Override either with `SLA_HOME` or `generated_skills_path`.
 
 ### The scanner
 

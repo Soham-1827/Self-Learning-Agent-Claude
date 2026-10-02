@@ -103,11 +103,12 @@ def test_document_summary_exposes_repo_slugs(meta, captions):
 def _apply_harness(tmp_path, monkeypatch, skill_name):
     """Drive cmd_apply with one skill proposal, recording where it staged and scanned.
 
-    Writes aimed at the real checkout are redirected, so no test touches the repo.
+    The staged directory is pinned by config, so no test can touch the real
+    checkout and no assertion depends on where that checkout lives.
     """
     from self_learning_agent.scanner import ScanVerdict
 
-    cfg = Config(home=tmp_path / "home")
+    cfg = Config(home=tmp_path / "home", generated_skills_path=tmp_path / "staged")
     store = cfg.home / "proposals"
     store.mkdir(parents=True)
     (store / "abc12345678.json").write_text(json.dumps({
@@ -129,14 +130,13 @@ def _apply_harness(tmp_path, monkeypatch, skill_name):
 
     monkeypatch.setattr(cli, "YouTubeSource", _Source)
 
-    repo_root = Path(cli.__file__).resolve().parents[2]
+    staged_dir = cfg.generated_skills_dir
     roots = []
     real_stage = cli.stage_skill
 
-    def recording_stage(proposal, root):
-        roots.append(Path(root))
-        target = tmp_path / "repo" if Path(root) == repo_root else root
-        return real_stage(proposal, target)
+    def recording_stage(proposal, where):
+        roots.append(Path(where))
+        return real_stage(proposal, where)
 
     monkeypatch.setattr(cli, "stage_skill", recording_stage)
 
@@ -150,18 +150,18 @@ def _apply_harness(tmp_path, monkeypatch, skill_name):
 
     monkeypatch.setattr(cli.scanner_mod, "available", lambda: True)
     monkeypatch.setattr(cli.scanner_mod, "scan", fake_scan)
-    return seen, roots, repo_root
+    return seen, roots, staged_dir
 
 
 def test_dry_run_writes_nothing_into_the_repo(tmp_path, monkeypatch):
-    seen, roots, repo_root = _apply_harness(tmp_path, monkeypatch, "dry-run-probe")
+    seen, roots, staged_dir = _apply_harness(tmp_path, monkeypatch, "dry-run-probe")
     args = cli.build_parser().parse_args(["apply", "https://youtu.be/abc12345678", "--dry-run"])
     assert cli.cmd_apply(args) == 0
 
-    assert repo_root not in roots                     # no reviewable copy on a dry run
-    assert seen["mode"] is not None                   # the scan saw a real file
-    assert repo_root not in seen["target"].parents    # staged outside the repo
-    assert not seen["target"].exists()                # and cleaned up afterwards
+    assert staged_dir not in roots                     # no reviewable copy on a dry run
+    assert seen["mode"] is not None                    # the scan saw a real file
+    assert staged_dir not in seen["target"].parents    # staged outside the review copy
+    assert not seen["target"].exists()                 # and cleaned up afterwards
 
 
 def test_a_real_run_scans_a_scratch_copy_not_the_repo(tmp_path, monkeypatch):
@@ -170,15 +170,15 @@ def test_a_real_run_scans_a_scratch_copy_not_the_repo(tmp_path, monkeypatch):
     A Windows drive in WSL reports every file as 0777, SkillSpector treats an
     executable SKILL.md as code, and the same skill scored 9 there and 0 elsewhere.
     """
-    seen, roots, repo_root = _apply_harness(tmp_path, monkeypatch, "real-run-probe")
+    seen, roots, staged_dir = _apply_harness(tmp_path, monkeypatch, "real-run-probe")
     monkeypatch.setattr("builtins.input", lambda prompt="": "n")
     args = cli.build_parser().parse_args(["apply", "https://youtu.be/abc12345678"])
     assert cli.cmd_apply(args) == 0
 
-    assert repo_root in roots                         # reviewable copy still written (D7)
-    assert repo_root not in seen["target"].parents    # but it is not what gets scanned
-    assert seen["mode"] & 0o111 == 0                  # the scanned copy is never executable
-    assert not seen["target"].exists()                # scratch cleaned up
+    assert staged_dir in roots                         # reviewable copy still written (D7)
+    assert staged_dir not in seen["target"].parents    # but it is not what gets scanned
+    assert seen["mode"] & 0o111 == 0                   # the scanned copy is never executable
+    assert not seen["target"].exists()                 # scratch cleaned up
 
 
 def test_no_terminal_to_answer_is_a_no_not_a_crash(tmp_path, monkeypatch, capsys):

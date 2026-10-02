@@ -57,6 +57,55 @@ def test_derived_paths_hang_off_home(tmp_path):
     assert cfg.ledger_path.parent == tmp_path
 
 
+# -- where a proposed skill is staged for review (D7) ------------------
+
+
+def test_staging_lands_under_home_when_there_is_no_checkout(tmp_path, monkeypatch):
+    """An installed copy has no repo, and `parents[2]` there is a library directory.
+
+    Writing the reviewable copy into it put D7's diffable artefact inside the
+    tool's own venv, invisible and deleted by the next upgrade.
+    """
+    monkeypatch.setattr(config_mod, "_checkout_root", lambda: None)
+    cfg = Config(home=tmp_path / "home")
+    assert cfg.generated_skills_dir == tmp_path / "home" / "generated-skills"
+
+
+def test_staging_prefers_the_checkout_so_it_stays_diffable(tmp_path, monkeypatch):
+    checkout = tmp_path / "checkout"
+    monkeypatch.setattr(config_mod, "_checkout_root", lambda: checkout)
+    cfg = Config(home=tmp_path / "home")
+    assert cfg.generated_skills_dir == checkout / "generated-skills"
+
+
+def test_an_explicit_path_beats_both(tmp_path, monkeypatch):
+    monkeypatch.setattr(config_mod, "_checkout_root", lambda: tmp_path / "checkout")
+    cfg = Config(home=tmp_path / "home", generated_skills_path=tmp_path / "elsewhere")
+    assert cfg.generated_skills_dir == tmp_path / "elsewhere"
+
+
+def test_generated_skills_path_is_read_from_config(tmp_path):
+    (tmp_path).mkdir(parents=True, exist_ok=True)
+    (tmp_path / "config.json").write_text(
+        '{"generated_skills_path": "~/staged-skills"}', encoding="utf-8"
+    )
+    cfg = load(home=tmp_path)
+    assert cfg.generated_skills_dir == Path.home() / "staged-skills"
+
+
+def test_a_checkout_is_only_a_checkout_with_git_and_pyproject(tmp_path, monkeypatch):
+    """Depth alone is not evidence: site-packages has the same shape."""
+    fake = tmp_path / "pkg" / "self_learning_agent" / "config.py"
+    fake.parent.mkdir(parents=True)
+    monkeypatch.setattr(config_mod, "__file__", str(fake))
+    assert config_mod._checkout_root() is None
+
+    root = tmp_path
+    (root / ".git").mkdir()
+    (root / "pyproject.toml").write_text("", encoding="utf-8")
+    assert config_mod._checkout_root() == root
+
+
 def test_ytdlp_override_is_honoured(monkeypatch):
     monkeypatch.setenv("SLA_YTDLP", "/custom/yt-dlp --flag")
     assert discover_ytdlp() == ("/custom/yt-dlp", "--flag")

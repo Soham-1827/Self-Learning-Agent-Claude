@@ -38,18 +38,18 @@ def _cfg(tmp_path, **over):
 # -- staging happens in the repo, not the live directory ---------------
 
 
-def test_staging_writes_into_the_repo_not_the_skills_dir(tmp_path):
-    repo = tmp_path / "repo"
-    path = stage_skill(_skill(), repo)
-    assert path == repo / "generated-skills" / "my-skill"
+def test_staging_writes_into_the_staged_dir_not_the_skills_dir(tmp_path):
+    staged = tmp_path / "generated-skills"
+    path = stage_skill(_skill(), staged)
+    assert path == staged / "my-skill"
     assert (path / "SKILL.md").read_text(encoding="utf-8").startswith("---")
 
 
 def test_staging_is_idempotent(tmp_path):
-    repo = tmp_path / "repo"
-    stage_skill(_skill(), repo)
-    stage_skill(_skill(content="second"), repo)
-    assert (repo / "generated-skills" / "my-skill" / "SKILL.md").read_text() == "second"
+    staged = tmp_path / "generated-skills"
+    stage_skill(_skill(), staged)
+    stage_skill(_skill(content="second"), staged)
+    assert (staged / "my-skill" / "SKILL.md").read_text() == "second"
 
 
 def test_a_skill_is_scanned_at_its_staged_path(tmp_path):

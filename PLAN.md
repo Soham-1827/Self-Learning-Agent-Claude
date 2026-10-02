@@ -1473,3 +1473,40 @@ own lesson about what "done" means for something meant to be used by other peopl
 0.1.0 was retired rather than reused: it is what the invalid manifest claimed for five
 milestones, and anything still holding it would have been told by `claude plugin update`
 that it was already current.
+
+### 0.2.1: the reviewable copy was landing inside the installed venv
+
+Found by a question — "where should I run `sla`?" — which is answered by "anywhere, nothing
+reads the working directory". True, and it exposed what `sla apply` read instead:
+
+```python
+repo_root = Path(__file__).resolve().parents[2]
+```
+
+From an editable install that is the checkout, so it was right for five milestones. From a
+normal install it is `.../lib/python3.14/`, so the staged skill — D7's *reviewable* copy —
+was written into the tool's own library directory: in no repository, invisible to its owner,
+and deleted by the next `uv tool upgrade`.
+
+Not a hole in the gate. Scans read a scratch copy in a temp directory (§21), and activation
+read back the same path it had just written, so skills still activated and still matched
+what was scanned. What broke was the review: staging a skill before activating it is only
+worth doing if someone can look at it, and an installed user could not.
+
+**Fixed by giving the path an owner.** `Config.generated_skills_dir` decides it, in order:
+an explicit `generated_skills_path` from `config.json`; else the checkout's
+`generated-skills/` when `_checkout_root()` finds a `.git` *and* a `pyproject.toml` beside
+it; else `SLA_HOME/generated-skills`. Depth alone cannot distinguish a checkout from
+site-packages, which is exactly how this shipped, so the check asks for evidence.
+
+`stage_skill` and `_activate_skill` now take the staged directory whole instead of a parent
+to join `generated-skills` onto. The join was invisible at both call sites and was what let
+a library directory look like a plausible argument.
+
+The test harness improved by accident. It used to redirect writes aimed at the real checkout
+by comparing against `parents[2]`; it now pins `generated_skills_path` to a temp directory,
+so no test can reach the repo and no assertion depends on where the repo lives.
+
+Verified in both shapes: the installed copy resolves to `SLA_HOME/generated-skills` with
+nothing written inside the venv, and the checkout still resolves to its own
+`generated-skills/`. 320 tests.
