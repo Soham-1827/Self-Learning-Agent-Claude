@@ -1316,3 +1316,111 @@ If the hosted generator is built later, the cheapest shape worth shipping is: ge
 cached by video id forever, a mid-tier model, a hard per-user daily cap, developer sign-in
 to filter bots, and copy that says plainly it is a preview of what the plugin does on your
 own machine.
+
+---
+
+## 28. Field notes: making it an installable plugin, and testing that claim (2026-10-01)
+
+### The manifest was never valid
+
+`claude plugin validate .` on the repo as it stood:
+
+```
+✘ author: Invalid input: expected object, received string
+```
+
+`.claude-plugin/plugin.json` has shipped since M0 with `"author": "Soham-1827"` where an
+object was required, and there was no `marketplace.json` at all. **This has never been
+installable as a plugin.** The README's `cp -r skills/... ~/.claude/skills/` was not a
+convenience alternative to installing it properly — it was the only thing that worked, and
+it is what caused the drift in §26.
+
+Both manifests now validate under `--strict`, as do the `skills/` and `commands/`
+directories as components.
+
+### Verified by installing it, not by reading it
+
+`claude plugin marketplace add <path>` takes a local path, so the whole install was
+exercised before anything was pushed:
+
+```
+✔ Successfully added marketplace: self-learning-agent
+✔ Successfully installed plugin: self-learning-agent@self-learning-agent (user)
+```
+
+`claude plugin details` then reports what a user actually pays for it:
+
+| Component | always-on | on-invoke |
+|---|---|---|
+| `learn-from-source` | ~100 tok | ~2.4k tok |
+| `learn-from` | ~40 tok | ~220 tok |
+| **total always-on** | **~142 tok** | |
+
+142 tokens added to every session is a cost worth knowing and small enough not to argue
+about. Note that both the skill and the command register as *skills* — a slash command is
+an invocable skill, so the inventory lists two.
+
+### Clean-room test of the CLI
+
+The plugin cannot install a Python package, so the CLI is a separate install and was tested
+the way a stranger gets it: a copy of the tree with no `.git` or `.venv`, a fresh
+interpreter, and a **non-editable** install, which is the only kind that catches packaging
+bugs.
+
+| Checked | Result |
+|---|---|
+| `uv pip install .` (non-editable), console script | `sla` present and runs |
+| first run with no config at all | sensible defaults, no crash |
+| exit codes | `1` runtime error, `2` usage error, `0` success |
+| config.json honoured | vault redirected to the sandbox |
+| `sla brief` offline from a copied cache | 5,915 words, 10 chapters, 9 links |
+| `sla note` | note rendered into the sandbox vault |
+| stored proposals | `id, kind, title, rationale, action` — **no risk field** |
+| `uv tool install` | one command, working `sla`, left the dev symlink alone |
+
+The missing risk field is deliberate and worth stating: risk is re-derived by `sla apply`
+every time, never read back from disk, so editing the stored file cannot talk the gate into
+a lower tier.
+
+### The scan degrades in three honest states
+
+All three observed live on the clean install, against the same two proposals:
+
+| Environment | Skill proposal | What it says |
+|---|---|---|
+| no SkillSpector on PATH | **BLOCKED** | "refusing to activate unscanned" |
+| SkillSpector, no model credentials | needs confirmation | `static-only (LLM requested but unavailable)` + "treat the score as weak evidence" |
+| SkillSpector + provider | needs confirmation | `static + semantic · 0 finding(s)` |
+
+The middle row is the one that matters for onboarding, and it is better than §27 assumed:
+a user without model credentials still gets a static scan that labels itself weak, rather
+than a hard stop or a false clean bill of health. The package proposal stayed at
+`confirm [medium]` in all three, correctly — `SCAN_CAN_BLOCK == {"skill"}` (§18).
+
+Also recorded: SkillSpector supports `anthropic` and `ollama` among its providers, so the
+README's OpenAI key was never necessary. `ollama` needs no key at all.
+
+### The suite was not testing what gets published
+
+`tests/conftest.py` does `sys.path.insert(0, .../src)`, so every run — including CI, which
+installs with `-e .` — imports from the source tree. **A packaging error would be invisible
+to all 315 tests.**
+
+Run instead from a directory with no `src/` on disk, against the installed package:
+
+- Python 3.12, from `site-packages`: **315 passed**
+- Python 3.10 (the floor), from `site-packages`: **315 passed**
+
+Worth adding to CI as a second job rather than changing `conftest.py`, since the src-path
+insert is what makes the dev loop work.
+
+### The blocker this uncovered
+
+`uv tool install git+https://github.com/...` works mechanically. What it installs today
+does not: the published `main` is **six commits behind**, and the version on GitHub has
+zero occurrences of `_en_auto` — it is the pre-§25 code that asks for the caption track
+YouTube refuses.
+
+> Anyone who installs from this repository right now gets a tool that cannot fetch a
+> transcript. Every install instruction in this README is correct and every one of them
+> currently delivers broken software. Pushing is the launch.

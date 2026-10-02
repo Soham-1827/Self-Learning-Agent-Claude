@@ -15,7 +15,7 @@ installs.
   videos teach. Notes should serve that, not just summarise.
 
 **[PLAN.md](PLAN.md) is the source of truth.** Decisions D1–D7, improvements I1–I4,
-the security model (§8), and field notes from every milestone (§15–§27).
+the security model (§8), and field notes from every milestone (§15–§28).
 
 ## Status
 
@@ -147,13 +147,18 @@ fall-through to the next track when one is refused, backoff for a genuine 429, a
 a per-track refusal wearing a 429; both blocked videos read in one request each once the
 right track was asked for.
 
-**Then make it installable by a stranger (§27).** Three findings, all small: there is no
-`.claude-plugin/marketplace.json`, so this cannot be installed as a plugin at all and the
-README's `cp` commands bake in drift; SkillSpector supports `anthropic` and `ollama`, so
-the documented OpenAI key is a second-vendor signup nobody needs; and
-`self-learning-agent` is free on PyPI, which turns clone + venv + editable install +
-symlink into one `uv tool install`. Then test it the way a stranger would — clean
-`SLA_HOME`, nothing in `~/.claude`, nothing on PATH. It has only ever run on WSL.
+**It is a plugin now, and the install was tested rather than asserted (§28).** Both
+manifests validate strict; the plugin was installed from a local marketplace and costs
+~142 tokens always-on; the CLI was verified from a non-editable clean-room install with an
+isolated `SLA_HOME`, including offline brief, note render, and all three scanner states;
+and 315 tests pass against the *installed* package on 3.12 and 3.10. Install is
+`uv tool install git+...` plus `claude plugin marketplace add` — no clone, no venv, no
+symlink, no hand copies.
+
+Still open from §27–§28: **push** (the blocker above); add a CI job that tests the
+installed package, since `conftest.py` inserts `src/` and the current suite never does;
+publish to PyPI if you want `uv tool install self-learning-agent` without the git URL (the
+name is free); and it has still only ever run on WSL.
 
 **Hosting is scoped and not recommended yet (§27).** ~$0.20 a note, and the inventory it
 would have to drop is 48–68% of every brief *and* the part that made the notes good.
@@ -187,13 +192,14 @@ opt-in or always-confirm.
   `EoNH3Tn8wYE` `p1` (clone the WebMCP reference repo, `medium`) and `p2` (Chrome flags,
   `high`/manual, and one of them opens remote debugging on the browser holding your
   sessions). Both notes are `pending-review`; `sla apply` is the owner's to run.
-- **The install instructions cause drift.** `cp -r skills/... ~/.claude/skills/` is a
-  snapshot with no update path, and it bit this machine: the live skill *and* command were
-  both from 2026-09-09, predating M5, so `/learn-from @handle` had neither the channel
-  routing nor the Channels procedure, and the skill still told the agent to "give 3–5"
-  project ideas — a target count, which is an instruction to invent. Both were copied over
-  on 2026-10-01, but **every user who follows the README inherits the same trap**. The fix
-  is a `.claude-plugin/marketplace.json` so this installs and updates as a plugin (§27).
+- **Two copies of the skill are live on this machine.** The hand copies in
+  `~/.claude/skills/learn-from-source` and `~/.claude/commands/learn-from.md` are still
+  there *and* the plugin now provides both. Remove the hand copies so there is one source
+  and the staleness trap cannot come back — that trap is what gave `/learn-from @handle`
+  a pre-M5 procedure for three weeks (§26).
+- **The published `main` is behind and ships broken caption fetching.** Every install
+  command in the README is correct and currently delivers the pre-§25 code, which asks for
+  the caption track YouTube refuses. Pushing is the launch (§28).
 - Triage's class guess is heuristic and misfires at the margin (§22, §26).
 - Coverage gap is mostly `cli.py` at 70%.
 - Vision on video frames is deferred.

@@ -115,33 +115,67 @@ that isn't allowed to go red.
 
 ## Install
 
-Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/) (or pip).
+Two pieces: the `sla` CLI, and the Claude Code plugin that gives you `/learn-from`.
+
+```bash
+# 1. the CLI  (Python 3.10+; installs sla onto your PATH)
+uv tool install git+https://github.com/Soham-1827/Self-Learning-Agent-Claude.git
+
+# 2. the plugin  (the /learn-from command and the skill behind it)
+claude plugin marketplace add Soham-1827/Self-Learning-Agent-Claude
+claude plugin install self-learning-agent@self-learning-agent
+```
+
+Inside a session you can do step 2 as `/plugin marketplace add
+Soham-1827/Self-Learning-Agent-Claude` followed by `/plugin install
+self-learning-agent`. Restart the session afterwards so the skill loads.
+
+Update later with `uv tool upgrade self-learning-agent` and `claude plugin update
+self-learning-agent`. **Do not copy `skills/` and `commands/` into `~/.claude/`
+by hand** — a copy has no update path, goes stale silently, and will keep teaching
+a superseded procedure (PLAN §26).
+
+Then point it at a vault, by writing `~/.self-learning-agent/config.json`:
+
+```json
+{ "vault_path": "~/LearningVault", "vault_subdir": "Sources", "install_mode": "copy" }
+```
+
+Defaults work without it: `~/LearningVault/Sources`, and `~/.self-learning-agent`
+for the cache and ledger (override with `SLA_HOME`).
+
+### The scanner
+
+Activating a generated skill is gated on a security scan by
+[SkillSpector](https://github.com/NVIDIA/skillspector):
+
+```bash
+uv tool install git+https://github.com/NVIDIA/skillspector.git
+export SKILLSPECTOR_PROVIDER=anthropic    # also: openai, ollama, bedrock, azure_openai
+export ANTHROPIC_API_KEY=...              # ollama needs no key and runs locally
+```
+
+There are three honest states, and `sla apply` tells you which one you are in:
+
+| | |
+|---|---|
+| no SkillSpector | skill proposals are **blocked** — "refusing to activate unscanned" |
+| SkillSpector, no model credentials | static-only scan, reported as weak evidence |
+| SkillSpector + a provider | `static + semantic`, the full scan |
+
+Nothing else is gated this way. A scan blocks *activation*, never a download (§18),
+and registry packages are never scanned — SkillSpector does not analyse them, and
+`sla apply` says so rather than implying a clean bill of health.
+
+### From source, for contributing
 
 ```bash
 git clone https://github.com/Soham-1827/Self-Learning-Agent-Claude.git
 cd Self-Learning-Agent-Claude
 uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python -e ".[dev]"
+.venv/bin/python -m pytest
 ```
-
-For the `/learn-from` command in Claude Code, copy the plugin pieces into your
-config directory:
-
-```bash
-cp -r skills/learn-from-source ~/.claude/skills/
-cp commands/learn-from.md ~/.claude/commands/
-ln -s "$PWD/.venv/bin/sla" ~/.local/bin/sla
-```
-
-Then point it at a vault by writing `~/.self-learning-agent/config.json`:
-
-```json
-{ "vault_path": "~/LearningVault", "vault_subdir": "Sources", "install_mode": "copy" }
-```
-
-Scanning needs [SkillSpector](https://github.com/NVIDIA/skillspector)
-(`uv tool install git+https://github.com/NVIDIA/skillspector.git`). Without it the
-gate refuses to activate any skill, by design.
 
 ## Applying proposals
 

@@ -1,8 +1,24 @@
 {
   "name": "self-learning-agent",
   "version": "0.1.0",
-  "description": "Turn creator videos into Obsidian notes and human-approved tool setup",
-  "author": "Soham-1827",
+  "description": "Turn a YouTube video or channel into an Obsidian note worth keeping, plus setup proposals you approve one at a time before anything is installed",
+  "author": {
+    "name": "Soham-1827",
+    "url": "https://github.com/Soham-1827"
+  },
+  "homepage": "https://github.com/Soham-1827/Self-Learning-Agent-Claude",
+  "repository": "https://github.com/Soham-1827/Self-Learning-Agent-Claude",
   "license": "MIT",
-  "homepage": "https://github.com/Soham-1827/Self-Learning-Agent-Claude"
+  "keywords": [
+    "youtube",
+    "obsidian",
+    "note-taking",
+    "transcripts",
+    "skills",
+    "approval-gate",
+    "security-scanning",
+    "yt-dlp"
+  ],
+  "skills": ["./skills/"],
+  "commands": ["./commands/"]
 }
