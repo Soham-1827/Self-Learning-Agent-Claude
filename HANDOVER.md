@@ -19,11 +19,11 @@ the security model (§8), and field notes from every milestone (§15–§29).
 
 ## Status
 
-**v1 (M0–M4) and M5 are complete, released as 0.2.2 and installable by anyone.** 328 tests,
-91% coverage, CI green on 3.10–3.13 — and a second CI job runs the suite against the
-*installed* package, because `conftest.py` puts `src/` on `sys.path` and nothing had ever
-tested the published wheel (§29). The whole loop has run for real: video → note → scan →
-owner's `y` → live skill.
+**v1 (M0–M4) and M5 are complete, released as 0.2.2 and installable by anyone.** 344 tests,
+91% coverage, **CI green on Linux, macOS and Windows** across 3.10–3.13 — and a second job
+runs the suite against the *installed* package on all three, because `conftest.py` puts
+`src/` on `sys.path` and nothing had ever tested the published wheel (§29). The whole loop
+has run for real: video → note → scan → owner's `y` → live skill.
 
 **Nobody is using it.** Three days after release: 0 stars, 0 forks, 0 watchers. The install
 works — verified from the outside (§28). It has simply never been shown to anyone, which is
@@ -174,8 +174,20 @@ Then, roughly by value:
 - **M7: the frontend.** Scoped in §27 and **not recommended yet**: ~$0.20 a note, it cannot
   apply anything, and the inventory it would have to drop is 48–68% of every brief *and*
   the part that made the notes good. Host a static showcase of pre-rendered notes instead.
+- **A second harness (Codex).** Scoped in §31. Smaller than it looks: Codex skills are
+  `<name>/SKILL.md` with the same two frontmatter fields, at `$HOME/.agents/skills`, so
+  `kind: skill` ports by changing a directory and Rule 5, §21 and D7 all stay intact. The
+  Claude Code coupling is **two files** — `inventory.py` reads and `apply.py` writes — and
+  `sla` already runs under Codex today with an empty inventory. The new work is TOML for
+  `[mcp_servers.<id>]` and deciding which harness to target. Not before real users.
 
-Still open: it has only ever run on WSL.
+**Platform: now tested on three, driven by hand on one (§30).** The matrix found that
+macOS was already fine and that Windows could not activate a skill at all — `write_text`
+translates `\n` to `\r\n`, so the staged `SKILL.md` never matched the bytes §21 compares,
+and every activation refused as if the file had been tampered with. Fixed by writing
+bytes. Still unverified by a human: the end-to-end flow on Windows, `install_mode =
+"symlink"` on a non-administrator account, and `_remove_cmd`'s PowerShell branch as an
+actual command.
 
 Open questions (PLAN §14): vault folder structure; whether `none`-risk auto-apply is
 opt-in or always-confirm.

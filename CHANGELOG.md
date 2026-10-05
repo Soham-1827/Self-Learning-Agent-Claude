@@ -8,6 +8,17 @@ Design decisions and the reasoning behind each change live in
 
 ## Unreleased
 
+### Fixed
+- **`sla apply` could not activate a skill on Windows at all.** `Path.write_text`
+  translates `\n` to `os.linesep`, so the staged `SKILL.md` never held the bytes
+  that were scanned, and the §21 byte comparison refused every activation as
+  *"changed after it was scanned"* — a correct operation reported as tampering.
+  Both skill writes now use `write_bytes`, so what lands on disk is byte-for-byte
+  what was scanned on every platform. The check itself was deliberately left
+  strict. (§30)
+- Ten test call sites read or wrote text without an explicit encoding, which
+  Windows decodes as cp1252 and which mangled every em dash and middot. (§30)
+
 ### Added
 - `examples/` — the six real notes and the six `proposals.json` stores they came
   with, copied byte for byte out of the author's vault, plus an index explaining
@@ -19,6 +30,18 @@ Design decisions and the reasoning behind each change live in
   match the files, and every published proposal still passes the validator and
   renders no arbitrary command. Nine tests, each checked by mutation — introduce
   the bug and exactly that test fails.
+- **CI runs on macOS and Windows**, not only Linux, and the packaged job runs on
+  all three. This is what found the bug above; the project had only ever been run
+  on WSL. (§30)
+- `tests/test_portability.py`: the staged skill must hold exactly the scanned
+  bytes, a CRLF staged copy must still be refused, skill content must never be
+  written through text mode, and an AST pass forbids text I/O anywhere in `src/`
+  or `tests/` without an explicit encoding.
+- `pytest-github-actions-annotate-failures`, because job logs need admin rights
+  and a failure on a platform the maintainer cannot run was otherwise unreadable.
+- PLAN §31 scopes a second harness (Codex) and corrects an earlier wrong claim:
+  Codex skills are `<name>/SKILL.md` with the same frontmatter, so the hard part
+  turned out to be identical and the coupling is two files.
 
 ## 0.2.2 — 2026-10-05
 

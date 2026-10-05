@@ -1604,3 +1604,209 @@ with itself, and this one is the document a cold session trusts most.
 No tooling added for it. The honest mitigation is cheap and already the project's habit:
 when a status bullet becomes false, delete it in the same pass that makes it false, and
 re-read the list rather than appending to it.
+
+---
+
+## 30. Field notes: what three platforms said, having only ever run on one (2026-10-05)
+
+The project had run on WSL and nowhere else, and HANDOVER said so under "Still open".
+Nothing had turned that into a fact in either direction. Adding `macos-latest` and
+`windows-latest` to the matrix cost an afternoon and answered it on the first run.
+
+### macOS was already fine. Windows could not activate a skill at all.
+
+| Platform | suite | the installed package |
+|---|---|---|
+| Linux, 3.10–3.13 | ✅ | ✅ |
+| macOS, 3.10 and 3.13 | ✅ | ✅ |
+| Windows, 3.10 and 3.13 | ❌ 5 tests | ❌ same tests |
+
+The packaged job narrowed it for free: on Windows the wheel installed and
+`sla --version` reported correctly, and only the test step failed. So this was never
+packaging — it was code, on a platform with different defaults.
+
+### A success that looked like an attack
+
+`Path.write_text` opens in text mode, which translates every `\n` to `os.linesep`. The
+staged `SKILL.md` on Windows therefore never held the bytes that had been scanned, and
+`_unscanned_changes` compares raw bytes. Every skill activation refused with *"changed
+after it was scanned — review the diff"*.
+
+**§21 fired a false positive, and the message accused the user of tampering.** Rule 12
+says a failure must never look like an absence; this is the same error reflected — a
+correct operation that looked like an attack. Both come from a check that cannot tell
+*why* two things differ, and the fix for both is to remove the ambiguity at the source
+rather than soften the check.
+
+Reproduced without a Windows machine: write the staged file with `newline="\r\n"`, call
+the real `_unscanned_changes`, get the exact string from the CI annotation.
+
+Fixed on the **write** side. Both skill writes go through `_write_scanned_bytes`, which
+uses `write_bytes` and translates nothing, so what lands on disk is byte-for-byte what was
+scanned on every platform. Normalising newlines inside the comparison was the tempting
+alternative and would have weakened a security check to suit a platform; there is now a
+test asserting a CRLF staged copy is still refused, so that door stays shut.
+
+### cp1252 is a real default, and ten call sites assumed it was not
+
+Ten tests read or wrote text with no `encoding=`. Windows decoded UTF-8 as cp1252, so a
+digest containing `·` and `—` came back as mojibake and an assertion on `"· applied ·"`
+failed against its own file. A test bug — but every note, digest and rationale this
+project writes is full of those characters, so the guard is an AST pass over `src/` and
+`tests/`, not ten edits.
+
+### The log was behind an auth wall, which shaped the whole approach
+
+`GET /actions/jobs/{id}/logs` answers `403 Must have admin rights to Repository` to an
+unauthenticated read, and `gh` is not installed on the dev machine. The one machine that
+could reproduce the bug was a platform the owner does not own, and its output was
+unreadable.
+
+`pytest-github-actions-annotate-failures` turns each failure into a check-run annotation,
+and annotations *are* public for a public repo. That is what made the five failures
+legible, and it puts failures inline on commits and PRs as a side effect. **Worth
+remembering as a shape: when the evidence is behind a wall, move the evidence rather than
+trying to climb it.**
+
+### The mutation that mattered was the one that failed to fail
+
+Four mutations, and three failed exactly their own test. The fourth — dropping an
+`encoding=` from `src/` — failed **nothing**. The AST guard treated `write_text`'s first
+positional argument as the encoding when it is the data, so every `write_text(x)` was
+waved through. Correcting it immediately found a real offender the loose version had been
+hiding (`test_digest.py:52`).
+
+> §29 said a guard is worth nothing until you prove it can fail. This adds the sharper
+> version: **the mutation that teaches you something is the one that passes.** Three
+> green mutations confirmed what was already believed; the one that did not fail found
+> the hole.
+
+Two of the new guards cannot fail on Linux or macOS — `write_text` and `write_bytes` are
+indistinguishable there — so a third asserts the mechanism instead of the outcome, which
+bites anywhere. A guard that only works on the platform you cannot run is not a guard.
+
+### Now green on all three, and what is still unknown
+
+12/12 jobs pass. `install_mode = "symlink"` works on the Windows runner, which answers a
+question the §22 notes left open — but runners are administrators, and `symlink_to` needs
+Developer Mode or elevation on an ordinary Windows account, so **that path is verified on
+CI and still unverified for a real user**. `os.chmod` moves only the read-only bit on
+Windows, so §21's file-mode half is inert there and the test skips rather than passing
+vacuously.
+
+Still untested anywhere: `_remove_cmd`'s PowerShell branch is exercised as a string, never
+run as a command, and the whole flow has never been driven end to end on Windows by a
+human — only its test suite has.
+
+---
+
+## 31. Scoping a second harness: Codex (2026-10-05)
+
+The owner asked for this to run on every device and under Codex, not only Claude Code.
+Those are two different sizes of problem. The first is in §30. This section is the
+second, scoped the way §27 scoped M7 — **and it corrects an answer given earlier in the
+same session, which was wrong because it was remembered rather than checked.**
+
+### The claim that was wrong
+
+Asked whether Codex support was feasible, the first answer given was that a Claude Code
+skill has *no clean Codex equivalent* — that Codex's instruction model is `AGENTS.md`, one
+file rather than a registry of named capabilities, so a `skill` proposal would have to
+become "append a section to `AGENTS.md`", which would break Rule 5 (an exact `undo`), §21
+(what activates is what was scanned) and D7 (a reviewable staged copy) all at once.
+
+Every part of that is out of date. It was stated with a hedge and the hedge was doing
+real work; the lesson is the project's own, one layer up: **a remembered API is a guess.**
+
+### What Codex actually does (checked 2026-10-05)
+
+| | Claude Code | Codex |
+|---|---|---|
+| Skill unit | `<name>/SKILL.md`, frontmatter `name` + `description` | **the same** |
+| User skills | `~/.claude/skills/` | `$HOME/.agents/skills/` |
+| Project skills | `<project>/.claude/skills/` | `.agents/skills` from `$CWD` up to `$REPO_ROOT` |
+| Admin / system | — | `/etc/codex/skills`, plus bundled defaults |
+| Install step | drop the directory in | drop the directory in; changes detected automatically |
+| Config | `settings.json`, `~/.claude.json` (JSON) | `~/.codex/config.toml`, project `.codex/config.toml` (TOML), `CODEX_HOME` overrides |
+| MCP servers | `mcp-configs/mcp-servers.json` (JSON) | `[mcp_servers.<id>]` table in `config.toml` (TOML) |
+| Optional in a skill | — | `scripts/`, `references/`, `assets/`, `agents/openai.yaml` |
+| Distribution | plugin + marketplace | plugin, in a directory shared with ChatGPT; `$skill-installer` |
+| Invocation | auto-discovery, or a plugin command | auto-discovery by `description`, or `$skill-name` |
+
+The skill format is identical, down to the filename and both frontmatter fields. So the
+proposal kind that looked impossible is the one that ports by changing a directory:
+
+- `undo` stays `rm -rf <dir>` — **Rule 5 intact**.
+- The scan still targets a directory containing one `SKILL.md` — **§21 and D7 intact**.
+- Nothing is merged into a shared file, so no diff-shaped undo is needed.
+
+### Where the Claude Code coupling actually lives
+
+Two files, confirmed by grepping every module for `CLAUDE_HOME`, `.claude`,
+`claude.json`, `mcp-configs` and `SKILL.md`:
+
+| File | Coupling |
+|---|---|
+| `inventory.py` | the read side — skill roots, `mcp-servers.json`, `settings.json`, `~/.claude.json` |
+| `apply.py` | the write side — `CLAUDE_HOME/skills/<name>/SKILL.md`, the MCP config entry |
+
+`sources/`, `cache`, `ledger`, `synthesis`, `proposals`, `gate`, `vault`, `scanner`,
+`cli` and `config` contain **no** reference to Claude Code. I4 built a `Source` seam for
+inputs; what this needs is its mirror on the output side, and the pipeline between them is
+already harness-neutral.
+
+Verified rather than assumed: with `CLAUDE_CONFIG_DIR` pointed at an empty directory,
+`sla inventory` returns `{"skills": 0, "mcp_servers": 0, "errors": []}` and exit 0. **So
+`sla` already runs under Codex today** — `brief`, `note`, `queue` and `digest` all work.
+What a Codex user loses is the inventory, which §26 records as the step that changed the
+output rather than confirming it, and that is most of the value.
+
+### What the work actually is
+
+1. **Skill roots become a list, not a constant.** `_find_skill_files` already walks a root
+   for `SKILL.md`; this is new roots, not new parsing.
+2. **MCP reading is free** — `tomllib` on ≥3.11 and `tomli` already a conditional
+   dependency below it.
+3. **MCP writing is the one new dependency.** `tomllib`/`tomli` are read-only, so writing
+   `[mcp_servers.<id>]` needs `tomli-w` or a narrow hand-rolled writer. The
+   backup-before-edit behaviour must carry over; a TOML round-trip that drops a user's
+   comments would be worse than the JSON case, which is an argument for writing only the
+   one table rather than reserialising the file.
+4. **Delivery.** Codex documents no user-defined slash command, so `/learn-from` has no
+   direct equivalent — but a skill is invocable as `$learn-from-source` and is
+   auto-discovered by its `description`, so shipping the same `SKILL.md` into
+   `~/.agents/skills/` *is* the delivery. That is arguably better than a command, because
+   it is one artifact for both harnesses.
+5. **Which harness to target.** Autodetect from the presence of `~/.claude`,
+   `$HOME/.agents/skills` and `~/.codex`, overridable in `config.json` and by a flag.
+   Inventorying both and targeting one explicitly is the safe default: reading is free,
+   writing is the part that needs an owner's intent.
+
+### The design recommendation
+
+Do **not** write a `ClaudeCodeHarness` and a `CodexHarness`. `.agents/skills` is a
+vendor-neutral path and the skill directory already reserves `agents/openai.yaml` for
+vendor-specific config, which reads like an emerging shared convention rather than one
+product's layout. If that holds, the right seam is data, not classes: **a list of skill
+roots plus a small set of MCP-config adapters**, so a third harness is a config entry and
+not a code change. Two hardcoded classes would have to be refactored the first time a
+third one appeared.
+
+### Effort and ordering, honestly
+
+Smaller than the earlier answer claimed — a focused milestone, not a rewrite, because the
+expensive part turned out to be identical and the coupling is two files. The distribution
+argument is unchanged though, and it is the one that should decide: at 0 stars, making it
+work in two harnesses nobody uses is not twice as good as one. The ordering stays
+**examples → tell people → `sla doctor` → PyPI**, with this after the first real users,
+and the one thing worth doing early is *not* regressing it: new code should not add a
+third file that knows the string `.claude`.
+
+### Open questions
+
+- Does the shared plugin directory accept a plugin built outside OpenAI's tooling, and on
+  what manifest? Unchecked, and it decides whether distribution is one artifact or two.
+- Codex has `/import` for migrating setup from other agents, Claude Code among them.
+  Worth reading before building anything, because it may already do part of this.
+- `/etc/codex/skills` is machine-wide. `sla apply` must never write there; the allowlist
+  should name the user root explicitly rather than taking the first root it finds.
