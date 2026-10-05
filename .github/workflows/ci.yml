@@ -3,11 +3,28 @@ on: [push, pull_request]
 
 jobs:
   test:
-    name: suite
-    runs-on: ubuntu-latest
+    # Until now this ran only on Linux, and the project had only ever been run on
+    # WSL, so "works on macOS" and "works on Windows" were predictions rather than
+    # facts. The full Python range stays on Linux; the other two platforms get
+    # both ends of it, which is where a platform difference shows up.
+    name: suite (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
     strategy:
+      # The point of adding platforms is to learn the whole list of failures in
+      # one run, not the first one alphabetically.
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13"]
+        include:
+          - os: macos-latest
+            python-version: "3.10"
+          - os: macos-latest
+            python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.10"
+          - os: windows-latest
+            python-version: "3.13"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,11 +37,25 @@ jobs:
     # The suite normally imports from src/, because conftest.py puts it on
     # sys.path. That is right for the dev loop and means nothing here ever
     # tested the wheel: a packaging error was invisible to all of it.
-    name: the installed package, not the source tree
-    runs-on: ubuntu-latest
+    #
+    # The console script differs per platform (`sla` vs `sla.exe` in Scripts/),
+    # so what the wheel installs is worth checking on each of them too.
+    name: the installed package (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest]
         python-version: ["3.10", "3.13"]
+        include:
+          - os: macos-latest
+            python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.13"
+    # Git Bash is present on the Windows runners, so one script serves all three.
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
