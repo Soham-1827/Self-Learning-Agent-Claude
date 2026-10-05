@@ -1,0 +1,60 @@
+name: release
+
+# Publishes to PyPI when a release tag is pushed, using Trusted Publishing
+# (OIDC) so no API token is stored in the repository or on a laptop.
+#
+# This workflow is INERT until a trusted publisher is configured on PyPI and a
+# `pypi` environment exists on the repository — see RELEASING.md. Until then it
+# simply never runs, because it only triggers on a tag.
+#
+# Publishing is irreversible: an index filename can never be reused, even after
+# deleting the release. So the build is validated and the tag is checked against
+# the declared version before anything is uploaded.
+
+on:
+  push:
+    tags:
+      - "self-learning-agent--v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build and validate the distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install build twine
+
+      - name: the tag must match the declared version
+        run: |
+          declared=$(grep '^version' pyproject.toml | cut -d'"' -f2)
+          tagged="${GITHUB_REF_NAME#self-learning-agent--v}"
+          echo "declared=$declared  tagged=$tagged"
+          test "$declared" = "$tagged"
+
+      - run: python -m build
+      - run: twine check --strict dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # the OIDC token Trusted Publishing exchanges
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

@@ -28,6 +28,38 @@ EXECUTABLES = {"git"} | set(ALLOWED_MANAGERS)
 SHELL_METACHARS = re.compile(r"[;&|`$><\n\r\\'\"(){}\[\]*?#~]")
 
 
+def _repo_url(root: Path) -> str:
+    """This repo's canonical URL, from the manifest rather than hardcoded."""
+    manifest = json.loads(
+        (root / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8"))
+    entry = next(p for p in manifest["plugins"] if p["name"] == manifest["name"])
+    return entry["homepage"].rstrip("/")
+
+
+def _local_target(target: str, base: Path, root: Path) -> Path | None:
+    """The file a link points at, or None if it leaves this repository.
+
+    The top-level README links absolutely, because its text is also the PyPI
+    long description and a relative link 404s there. So "is this link live?"
+    has to understand `<repo>/blob/main/<path>` as well as `../thing.md`.
+    """
+    target = target.split("#", 1)[0]
+    if not target:
+        return None
+    prefix = _repo_url(root) + "/"
+    if target.startswith(prefix):
+        rest = target[len(prefix):]
+        for kind in ("blob/main/", "tree/main/"):
+            if rest.startswith(kind):
+                return (root / unquote(rest[len(kind):])).resolve()
+        return None
+    if "://" in target:
+        return None
+    return (base / unquote(target)).resolve()
+
+
+MD_LINK_ORIG = MD_LINK
+
 def _repo_root() -> Path | None:
     """The checkout, or None when the tests run against an installed package."""
     for parent in Path(__file__).resolve().parents:
@@ -92,13 +124,12 @@ def test_every_link_into_the_examples_resolves(examples: Path):
     checked = 0
     for page, base in ((examples / "README.md", examples), (repo / "README.md", repo)):
         for target in MD_LINK.findall(page.read_text(encoding="utf-8")):
-            path = unquote(target.split("#", 1)[0])
-            if not path or "://" in path:
-                continue
-            resolved = (base / path).resolve()
+            resolved = _local_target(target, base, repo)
+            if resolved is None:
+                continue  # leaves this repository; not ours to police
             if examples not in resolved.parents and resolved != examples:
-                continue  # a link to something outside examples/; not ours to police
-            assert resolved.exists(), f"{page.name} links to a missing {path}"
+                continue
+            assert resolved.exists(), f"{page.name} links to a missing {target}"
             checked += 1
     assert checked >= len(_published_files(examples))
 
@@ -115,8 +146,11 @@ def test_the_index_links_outward_without_breaking(examples: Path):
 
 def test_the_main_readme_sends_a_visitor_to_the_examples(examples: Path):
     """The whole point of §29 item 1: reachable from the landing page, not buried."""
-    readme = (examples.parent / "README.md").read_text(encoding="utf-8")
-    assert "(examples/)" in readme
+    repo = examples.parent
+    readme = (repo / "README.md").read_text(encoding="utf-8")
+    pointer = f"{_repo_url(repo)}/tree/main/examples"
+    assert pointer in readme or "(examples/)" in readme, (
+        "the landing page must link the examples, relatively or absolutely")
 
 
 # --------------------------------------------------------------------------- index
@@ -199,8 +233,8 @@ def _claimed_counts(page: Path, base: Path, examples: Path, column: str):
         links = MD_LINK.findall(cells[0])
         if not links:
             continue
-        note = (base / unquote(links[0])).resolve()
-        if not note.is_file() or not _frontmatter(note).get("source_id"):
+        note = _local_target(links[0], base, examples.parent)
+        if note is None or not note.is_file() or not _frontmatter(note).get("source_id"):
             continue  # the digest row, or a link to something else
         if not _store_for(note, examples).is_file():
             continue

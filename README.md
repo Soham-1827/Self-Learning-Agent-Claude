@@ -6,9 +6,9 @@
 > vault note with validated proposals; `/learn-from @channel` triages a creator's
 > latest uploads for you to pick from; `sla apply` reviews proposals one at a time
 > behind a SkillSpector scan. Nothing is ever applied without you saying yes.
-> 368 tests, 91% coverage, CI on Linux, macOS and Windows across Python
+> 379 tests, 91% coverage, CI on Linux, macOS and Windows across Python
 > 3.10–3.13. Architecture is in
-> [PLAN.md](PLAN.md); to pick the work up cold, read [HANDOVER.md](HANDOVER.md).
+> [PLAN.md](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/PLAN.md); to pick the work up cold, read [HANDOVER.md](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/HANDOVER.md).
 
 ---
 
@@ -26,7 +26,7 @@ This turns that firehose into two things you can use: **a note in your vault**, 
 **a list of setup actions you explicitly approve**.
 
 Before installing anything, read what it actually produces:
-**[six real notes, unedited, in `examples/`](examples/)**.
+**[six real notes, unedited, in `examples/`](https://github.com/Soham-1827/Self-Learning-Agent-Claude/tree/main/examples)**.
 
 ## What it does
 
@@ -115,7 +115,7 @@ On top of that:
 - **Every action is reversible.** Each applied proposal records its own undo command.
 - **Nothing outside your vault is touched before you approve.**
 
-Full model in [PLAN.md §8](PLAN.md). The adversarial-transcript test suite is the one
+Full model in [PLAN.md §8](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/PLAN.md). The adversarial-transcript test suite is the one
 that isn't allowed to go red.
 
 ## Install
@@ -324,18 +324,18 @@ security model enforceable.
 
 ## What it looks like on real videos
 
-**[Read the notes in `examples/`.](examples/)** Six videos, three creators, unedited —
+**[Read the notes in `examples/`.](https://github.com/Soham-1827/Self-Learning-Agent-Claude/tree/main/examples)** Six videos, three creators, unedited —
 plus the `proposals.json` files `sla apply` reads, so the security model is something
 you can check rather than take on trust.
 
 | Video | Class | Proposals | Ideas |
 |---|---|---|---|
-| [*Building a Software Factory*](examples/notes/2026-09-14%20Building%20a%20Software%20Factory%20that%20actually%20works%20%28Full%20Course%29%20%28_LCeJZFIsd4%29.md) (Greg Isenberg) | `tooling` | 2 | 1 |
-| [*WebMCP: Let AI Agents pay you money*](examples/notes/2026-08-26%20WebMCP%20Let%20AI%20Agents%20pay%20you%20money%20%28EoNH3Tn8wYE%29.md) (Greg Isenberg) | `mixed` | 2 | 2 |
-| [*5 GitHub Repos*](examples/notes/2026-09-02%205%20GitHub%20Repos%20Kill%20AI%20Slop%2C%20Go%20Viral%2C%20Make%20Money%20%289_SZFIW7tus%29.md) (Greg Isenberg) | `tooling` | 3 | 2 |
-| [*Meta Muse AI Connectors*](examples/notes/2026-09-24%20Meta%20Muse%20AI%20Connectors%20The%20App%20Store%20for%20AI%20%2884q4WA3kA8Q%29.md) (Greg Isenberg) | `conceptual` | **0** | 4 |
-| [*How to beat low stakes poker*](examples/notes/2026-06-25%20How%20to%20beat%20low%20stakes%20poker%21%20%28Every%20Strategy%29%20%28gPPT4WpVRZ4%29.md) (BlackRain79Poker) | `conceptual` | **0** | 2 |
-| [*How the Periodic Table Works*](examples/notes/2026-09-03%20Neil%20deGrasse%20Tyson%20Explains%20How%20the%20Periodic%20Table%20Works%20%28UpE5yuhwXXc%29.md) (StarTalk) | `conceptual` | **0** | 1 |
+| [*Building a Software Factory*](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/examples/notes/2026-09-14%20Building%20a%20Software%20Factory%20that%20actually%20works%20%28Full%20Course%29%20%28_LCeJZFIsd4%29.md) (Greg Isenberg) | `tooling` | 2 | 1 |
+| [*WebMCP: Let AI Agents pay you money*](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/examples/notes/2026-08-26%20WebMCP%20Let%20AI%20Agents%20pay%20you%20money%20%28EoNH3Tn8wYE%29.md) (Greg Isenberg) | `mixed` | 2 | 2 |
+| [*5 GitHub Repos*](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/examples/notes/2026-09-02%205%20GitHub%20Repos%20Kill%20AI%20Slop%2C%20Go%20Viral%2C%20Make%20Money%20%289_SZFIW7tus%29.md) (Greg Isenberg) | `tooling` | 3 | 2 |
+| [*Meta Muse AI Connectors*](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/examples/notes/2026-09-24%20Meta%20Muse%20AI%20Connectors%20The%20App%20Store%20for%20AI%20%2884q4WA3kA8Q%29.md) (Greg Isenberg) | `conceptual` | **0** | 4 |
+| [*How to beat low stakes poker*](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/examples/notes/2026-06-25%20How%20to%20beat%20low%20stakes%20poker%21%20%28Every%20Strategy%29%20%28gPPT4WpVRZ4%29.md) (BlackRain79Poker) | `conceptual` | **0** | 2 |
+| [*How the Periodic Table Works*](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/examples/notes/2026-09-03%20Neil%20deGrasse%20Tyson%20Explains%20How%20the%20Periodic%20Table%20Works%20%28UpE5yuhwXXc%29.md) (StarTalk) | `conceptual` | **0** | 1 |
 
 Half of them proposed nothing. The *Meta Muse* video is about AI connectors and the
 channel triage guessed `likely tooling` from its description — the note classified it
@@ -344,7 +344,7 @@ project ideas instead. The poker and periodic-table videos have no chapters, no 
 links, and nothing installable. They still produce notes worth keeping.
 
 That is the design working, not failing. Also in `examples/`: the
-[digest](examples/notes/2026-09-25%20Digest%20-%20Greg%20Isenberg.md) that closed the
+[digest](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/examples/notes/2026-09-25%20Digest%20-%20Greg%20Isenberg.md) that closed the
 `@GregIsenberg` channel run — ten videos triaged, three picked, and the Software
 Factory, WebMCP and Meta Muse notes written from them.
 
@@ -367,8 +367,12 @@ Factory, WebMCP and Meta Muse notes written from them.
 
 ## Contributing
 
+Releases follow [RELEASING.md](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/RELEASING.md) — a version is declared in
+three files and must agree in all of them; missing one caused two of the bugs in
+PLAN §28–§29.
+
 Early — the most useful contribution right now is disagreement with
-[PLAN.md](PLAN.md). Open an issue.
+[PLAN.md](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/PLAN.md). Open an issue.
 
 Transcript fixtures for the test suite are the highest-value contribution —
 especially adversarial ones, and sources that break the assumptions in PLAN.md §19–§20.

@@ -20,6 +20,21 @@ Design decisions and the reasoning behind each change live in
   Windows decodes as cp1252 and which mangled every em dash and middot. (§30)
 
 ### Added
+- **PyPI packaging, prepared but not published.** The listing metadata an index
+  needs — summary, SPDX licence, author without an address, keywords,
+  classifiers, project URLs — plus guards that the declared Pythons match
+  `requires-python`, that no deprecated `License ::` classifier returns, and that
+  no email is published. `self-learning-agent` is unregistered on PyPI and
+  TestPyPI; the first upload is the maintainer's to trigger.
+- `RELEASING.md`, because the release process was tribal knowledge and forgetting
+  one of its steps caused two of the bugs in §28–§29.
+- `.github/workflows/release.yml` — publishes on a `self-learning-agent--v*` tag
+  via Trusted Publishing (OIDC), so no API token is ever stored. It refuses to
+  publish if the tag and `pyproject.toml` disagree, and is inert until a trusted
+  publisher is configured.
+- A CI job that builds the distribution and runs `twine check --strict` on every
+  push. A listing that fails to render is otherwise only discoverable after
+  publishing, and an index filename can never be reused.
 - **`sla doctor`** — ten checks on what is actually installed here, each
   traceable to something that shipped broken: CLI and plugin versions with skew
   flagged, a hand-copied first-party skill (§26), yt-dlp resolved the same way

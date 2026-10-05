@@ -1,5 +1,6 @@
 [build-system]
-requires = ["setuptools>=68"]
+# 77+ for PEP 639: `license` as an SPDX string plus `license-files`.
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,12 +8,43 @@ name = "self-learning-agent"
 version = "0.2.2"
 description = "Turn creator videos into vault notes and human-approved setup actions"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
+# Name only, no address. A public index entry is exactly the kind of place an
+# email address should not be published, and `test_packaging.py` pins that.
+authors = [{ name = "Soham-1827" }]
+keywords = [
+    "youtube", "obsidian", "notes", "claude-code", "codex",
+    "agent", "transcript", "yt-dlp", "knowledge-management",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    # No "License :: OSI Approved" classifier: PEP 639 replaces it with the
+    # SPDX `license` field above, and declaring both is now an error.
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Utilities",
+]
 dependencies = [
     "yt-dlp>=2025.1.1",
     "tomli>=2.0.1; python_version<'3.11'",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Soham-1827/Self-Learning-Agent-Claude"
+Repository = "https://github.com/Soham-1827/Self-Learning-Agent-Claude"
+Changelog = "https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/CHANGELOG.md"
+Issues = "https://github.com/Soham-1827/Self-Learning-Agent-Claude/issues"
+"Example output" = "https://github.com/Soham-1827/Self-Learning-Agent-Claude/tree/main/examples"
 
 [project.optional-dependencies]
 dev = [

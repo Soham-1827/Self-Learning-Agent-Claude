@@ -78,3 +78,38 @@ jobs:
           cd "$RUNNER_TEMP/pkgtest"
           python -c "import pathlib, self_learning_agent as p; w = pathlib.Path(p.__file__); assert 'site-packages' in str(w), f'imported from {w}, not the installed package'; print('importing from', w.parent)"
           python -m pytest -q
+
+  dist:
+    # The README is also the PyPI long description, and a listing that fails to
+    # render is only discoverable after publishing — which cannot be undone,
+    # because an index filename is never reusable. So check it every push.
+    name: the distribution a package index would get
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install build twine
+      - run: python -m build
+      - name: the metadata and the long description must be valid
+        run: twine check --strict dist/*
+      - name: the wheel ships the package and nothing else
+        run: |
+          python - <<'EOF'
+          import glob
+          import zipfile
+
+          names = zipfile.ZipFile(glob.glob("dist/*.whl")[0]).namelist()
+          tops = {n.split("/")[0] for n in names}
+          assert "self_learning_agent" in tops, tops
+          # Version-agnostic: the only other top level may be the dist-info.
+          extra = {t for t in tops
+                   if t != "self_learning_agent" and not t.endswith(".dist-info")}
+          assert not extra, f"the wheel ships more than the package: {sorted(extra)}"
+          print("wheel top level:", sorted(tops))
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

@@ -19,7 +19,7 @@ the security model (§8), and field notes from every milestone (§15–§29).
 
 ## Status
 
-**v1 (M0–M4) and M5 are complete, released as 0.2.2 and installable by anyone.** 368 tests,
+**v1 (M0–M4) and M5 are complete, released as 0.2.2 and installable by anyone.** 379 tests,
 91% coverage, **CI green on Linux, macOS and Windows** across 3.10–3.13 — and a second job
 runs the suite against the *installed* package on all three, because `conftest.py` puts
 `src/` on `sys.path` and nothing had ever tested the published wheel (§29). The whole loop
@@ -168,7 +168,14 @@ and `~/.agents/skills` was read as evidence of Codex when it is a vendor-neutral
 
 Then, roughly by value:
 
-- **PyPI**, to drop the git URL from the install line. `self-learning-agent` is free.
+- **PyPI** — packaging is ready; the upload is not done. Metadata, guards, a
+  `twine check --strict` CI job, `RELEASING.md`, and a Trusted-Publishing workflow
+  that fires on a `self-learning-agent--v*` tag all exist. `self-learning-agent` is
+  still unregistered on PyPI and TestPyPI. **Two things are the owner's:** create the
+  trusted publisher at pypi.org/manage/account/publishing/ plus a `pypi` GitHub
+  environment, then push a tag. Rehearse on TestPyPI first — an index filename can
+  never be reused, so a bad `0.3.0` burns `0.3.0` for good. The README install line
+  still points at the git URL on purpose, because the package does not exist yet.
 - **Close the apply-flow gaps** (below) — the last rough edges in a loop that runs for real.
 - **M6: scheduled polling.** `sla queue` is the natural core; the open question is how a
   run *without the owner present* respects Rule 10 — likely: queue and digest the triage

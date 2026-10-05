@@ -96,3 +96,57 @@ def test_no_secret_shaped_fields_in_the_published_manifests(root):
     for name in ("plugin.json", "marketplace.json"):
         text = (root / ".claude-plugin" / name).read_text(encoding="utf-8")
         assert "@gmail" not in text and "email" not in text.lower(), name
+
+
+# --------------------------------------------------------------- the PyPI listing
+
+
+def _pyproject(root: Path) -> dict:
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # pragma: no cover - 3.10
+        import tomli as tomllib
+    return tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+
+
+def test_pyproject_publishes_no_email(root):
+    """A package index entry is published, not configured — same rule as above."""
+    text = (root / "pyproject.toml").read_text(encoding="utf-8")
+    assert "@gmail" not in text
+    for author in _pyproject(root)["project"].get("authors", []):
+        assert "email" not in author, author
+
+
+@pytest.mark.parametrize(
+    "field", ["description", "readme", "license", "authors", "keywords",
+              "classifiers", "urls"])
+def test_the_index_listing_has_what_a_stranger_needs(root, field):
+    """An index page with no summary, links or classifiers is not findable."""
+    assert _pyproject(root)["project"].get(field), field
+
+
+def test_the_declared_pythons_match_requires_python(root):
+    """A classifier claiming 3.9 while requires-python says >=3.10 is a lie."""
+    project = _pyproject(root)["project"]
+    floor = project["requires-python"].lstrip(">=")
+    declared = sorted(
+        c.rsplit(":", 1)[1].strip()
+        for c in project["classifiers"]
+        if c.startswith("Programming Language :: Python :: 3.")
+    )
+    assert declared, "no per-version Python classifiers"
+    assert declared[0] == floor, (declared, floor)
+
+
+def test_no_deprecated_license_classifier(root):
+    """PEP 639 replaced it with the SPDX `license` field; declaring both errors."""
+    project = _pyproject(root)["project"]
+    assert isinstance(project["license"], str), "license must be an SPDX string"
+    assert not [c for c in project["classifiers"] if c.startswith("License ::")]
+
+
+def test_the_readme_links_absolutely(root):
+    """README.md is also the PyPI long description, where a relative link 404s."""
+    relative = re.findall(r"\]\((?!https?://|#)([^)]+)\)",
+                          (root / "README.md").read_text(encoding="utf-8"))
+    assert not relative, f"relative links would break on PyPI: {relative}"
