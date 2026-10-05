@@ -85,8 +85,7 @@ def stage_skill(proposal: Proposal, staged_dir: Path) -> Path:
     target = Path(staged_dir) / name
     target.mkdir(parents=True, exist_ok=True)
     skill_file = target / "SKILL.md"
-    skill_file.write_text(proposal.action["content"], encoding="utf-8")
-    os.chmod(skill_file, SKILL_FILE_MODE)
+    _write_scanned_bytes(skill_file, proposal.action["content"])
     return target
 
 
@@ -108,6 +107,20 @@ def _run(cmd: list[str], cwd: Path | None = None) -> tuple[bool, str]:
         tail = (proc.stderr or proc.stdout or "").strip().splitlines()
         return False, (tail[-1] if tail else f"exit {proc.returncode}")
     return True, " ".join(cmd)
+
+
+def _write_scanned_bytes(path: Path, content: str) -> None:
+    """Write exactly the scanned bytes, on every platform.
+
+    `write_text` opens in text mode, which translates every `\n` to `os.linesep`
+    — so on Windows the file on disk was never the content that was scanned, and
+    `_unscanned_changes` compares raw bytes. The result was that `sla apply`
+    could not activate any skill on Windows: it reported the staged copy as
+    "changed after it was scanned", which is a failure dressed as tampering.
+    Writing bytes makes §21 true by construction rather than by platform.
+    """
+    path.write_bytes(content.encode("utf-8"))
+    os.chmod(path, SKILL_FILE_MODE)
 
 
 def _activate_skill(proposal: Proposal, config: Config, staged_dir: Path) -> AppliedRecord:
@@ -132,8 +145,7 @@ def _activate_skill(proposal: Proposal, config: Config, staged_dir: Path) -> App
     # Windows mount is never carried into the live skills directory.
     target.mkdir(parents=True)
     skill_file = target / "SKILL.md"
-    skill_file.write_text(proposal.action["content"], encoding="utf-8")
-    os.chmod(skill_file, SKILL_FILE_MODE)
+    _write_scanned_bytes(skill_file, proposal.action["content"])
     return _record(proposal, True, f"copied to {target}", undo=_remove_cmd(target))
 
 

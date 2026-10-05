@@ -49,8 +49,12 @@ def _process(cfg, source_id, *, title="A video", author="Greg Isenberg",
     path = write_note(doc, parse_result(raw), cfg.vault_path / cfg.vault_subdir)
     store = cfg.home / "proposals"
     store.mkdir(parents=True, exist_ok=True)
-    (store / f"{source_id}.json").write_text(json.dumps(
-        {"source_id": source_id, "note_path": str(path), "proposals": list(proposals)}))
+    (store / f"{source_id}.json").write_text(
+        json.dumps(
+            {"source_id": source_id, "note_path": str(path), "proposals": list(proposals)}
+        ),
+        encoding="utf-8",
+    )
     Ledger(cfg.ledger_path).record(
         "youtube", source_id, title=title, note_path=str(path),
         status=status or ("pending-review" if proposals else "no-actions"))
@@ -99,7 +103,7 @@ def test_proposals_are_grouped_by_risk_tier_in_order(tmp_path):
     cfg = _cfg(tmp_path)
     a = _process(cfg, "aaaaaaaaaaa", proposals=[MANUAL, SKILL])
     b = _process(cfg, "bbbbbbbbbbb", proposals=[CLONE])
-    text = write_digest(["aaaaaaaaaaa", "bbbbbbbbbbb"], cfg, today=TODAY)[0].read_text()
+    text = write_digest(["aaaaaaaaaaa", "bbbbbbbbbbb"], cfg, today=TODAY)[0].read_text(encoding="utf-8")
     none_at, medium_at, high_at = (text.index("### none"), text.index("### medium"),
                                    text.index("### high"))
     assert none_at < medium_at < high_at
@@ -112,7 +116,7 @@ def test_proposals_are_grouped_by_risk_tier_in_order(tmp_path):
 def test_stored_proposals_are_revalidated_not_trusted(tmp_path):
     cfg = _cfg(tmp_path)
     _process(cfg, "aaaaaaaaaaa", proposals=[SKILL, INVALID])
-    text = write_digest(["aaaaaaaaaaa"], cfg, today=TODAY)[0].read_text()
+    text = write_digest(["aaaaaaaaaaa"], cfg, today=TODAY)[0].read_text(encoding="utf-8")
     assert "evil" not in text
     assert "1 rejected on re-validation" in text
 
@@ -120,7 +124,7 @@ def test_stored_proposals_are_revalidated_not_trusted(tmp_path):
 def test_no_proposals_says_so(tmp_path):
     cfg = _cfg(tmp_path)
     _process(cfg, "aaaaaaaaaaa")
-    text = write_digest(["aaaaaaaaaaa"], cfg, today=TODAY)[0].read_text()
+    text = write_digest(["aaaaaaaaaaa"], cfg, today=TODAY)[0].read_text(encoding="utf-8")
     assert "No proposals across these notes" in text
     assert "## To review" not in text
 
@@ -129,7 +133,7 @@ def test_sources_with_proposals_get_a_dry_run_command(tmp_path):
     cfg = _cfg(tmp_path)
     _process(cfg, "aaaaaaaaaaa", proposals=[SKILL])
     _process(cfg, "bbbbbbbbbbb")
-    text = write_digest(["aaaaaaaaaaa", "bbbbbbbbbbb"], cfg, today=TODAY)[0].read_text()
+    text = write_digest(["aaaaaaaaaaa", "bbbbbbbbbbb"], cfg, today=TODAY)[0].read_text(encoding="utf-8")
     assert 'sla apply "aaaaaaaaaaa" --dry-run' in text
     assert 'sla apply "bbbbbbbbbbb"' not in text
 
@@ -139,7 +143,7 @@ def test_status_comes_from_the_ledger_once_apply_has_run(tmp_path):
     cfg = _cfg(tmp_path)
     _process(cfg, "aaaaaaaaaaa", proposals=[SKILL])
     Ledger(cfg.ledger_path).record("youtube", "aaaaaaaaaaa", status="applied")
-    text = write_digest(["aaaaaaaaaaa"], cfg, today=TODAY)[0].read_text()
+    text = write_digest(["aaaaaaaaaaa"], cfg, today=TODAY)[0].read_text(encoding="utf-8")
     assert "· applied ·" in text
 
 
@@ -185,7 +189,7 @@ def test_a_title_that_breaks_wikilinks_gets_a_markdown_link():
 def test_a_real_note_title_with_a_hash_links_correctly(tmp_path):
     cfg = _cfg(tmp_path)
     note = _process(cfg, "aaaaaaaaaaa", title="C# for agents")
-    text = write_digest(["aaaaaaaaaaa"], cfg, today=TODAY)[0].read_text()
+    text = write_digest(["aaaaaaaaaaa"], cfg, today=TODAY)[0].read_text(encoding="utf-8")
     assert f"(<{note.name}>)" in text and f"[[{note.stem}]]" not in text
 
 

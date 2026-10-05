@@ -265,7 +265,7 @@ def test_status_stays_partial_while_another_proposal_awaits_review(tmp_path, mon
     row = Ledger(cfg.ledger_path).all()[0]
     assert row["status"] == "partial"
     assert row["title"] == "The title"            # the update no longer erases it
-    assert json.loads(store.read_text())["applied"] == ["p1"]
+    assert json.loads(store.read_text(encoding="utf-8"))["applied"] == ["p1"]
 
 
 def test_status_is_applied_once_nothing_automatable_is_waiting(tmp_path, monkeypatch):

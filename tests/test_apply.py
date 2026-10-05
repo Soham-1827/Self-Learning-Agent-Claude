@@ -49,7 +49,7 @@ def test_staging_is_idempotent(tmp_path):
     staged = tmp_path / "generated-skills"
     stage_skill(_skill(), staged)
     stage_skill(_skill(content="second"), staged)
-    assert (staged / "my-skill" / "SKILL.md").read_text() == "second"
+    assert (staged / "my-skill" / "SKILL.md").read_text(encoding="utf-8") == "second"
 
 
 def test_a_skill_is_scanned_at_its_staged_path(tmp_path):
@@ -93,7 +93,7 @@ def test_activation_never_overwrites_an_existing_skill(tmp_path, monkeypatch):
     record = apply_decision(Decision(_skill(), "confirm"), _cfg(tmp_path), repo)
     assert not record.ok
     assert "already exists" in record.detail
-    assert (existing / "SKILL.md").read_text() == "mine"
+    assert (existing / "SKILL.md").read_text(encoding="utf-8") == "mine"
 
 
 def test_symlink_mode_links_instead_of_copying(tmp_path, monkeypatch):
@@ -162,7 +162,7 @@ def test_mcp_edit_refuses_to_replace_a_configured_server(tmp_path, monkeypatch):
                "action": {"name": "playwright", "manager": "npx", "package": "@pw/mcp"}})
     record = apply_decision(Decision(p, "confirm"), _cfg(tmp_path), tmp_path)
     assert not record.ok
-    assert json.loads(cfg_file.read_text())["mcpServers"]["playwright"]["command"] == "mine"
+    assert json.loads(cfg_file.read_text(encoding="utf-8"))["mcpServers"]["playwright"]["command"] == "mine"
 
 
 def test_missing_mcp_config_is_reported_not_created(tmp_path, monkeypatch):
