@@ -62,7 +62,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: install non-editable
-        run: pip install . pytest
+        run: pip install . pytest pytest-github-actions-annotate-failures
 
       - name: the version it reports is the version it declares
         run: |
