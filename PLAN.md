@@ -1589,3 +1589,18 @@ Nothing in this section makes anyone use it. The ordered list is unchanged:
    cannot tell whether this is worth three commands. Nobody installs a CLI to find out.
 2. **Tell people**, with the notes as the argument rather than the README.
 3. `sla doctor`, PyPI, M6.
+
+### Addendum: the handover had started contradicting itself
+
+Updating the docs for a fresh session turned up two bullets in `HANDOVER.md`, four lines
+apart, saying opposite things: that the hand-copied skill and command were *still present
+and should be removed*, and that they *were gone and the plugin owns them now*. Both were
+written truthfully, a session apart. Nothing re-read the first when the second was added.
+
+Same shape as the three bugs above — not a wrong statement, an **absent check**. A test
+caught the version drift because one was written; nothing catches a handover that argues
+with itself, and this one is the document a cold session trusts most.
+
+No tooling added for it. The honest mitigation is cheap and already the project's habit:
+when a status bullet becomes false, delete it in the same pass that makes it false, and
+re-read the list rather than appending to it.

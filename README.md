@@ -6,7 +6,7 @@
 > vault note with validated proposals; `/learn-from @channel` triages a creator's
 > latest uploads for you to pick from; `sla apply` reviews proposals one at a time
 > behind a SkillSpector scan. Nothing is ever applied without you saying yes.
-> 315 tests, 91% coverage, CI on Python 3.10–3.13. Architecture is in
+> 328 tests, 91% coverage, CI on Python 3.10–3.13. Architecture is in
 > [PLAN.md](PLAN.md); to pick the work up cold, read [HANDOVER.md](HANDOVER.md).
 
 ---

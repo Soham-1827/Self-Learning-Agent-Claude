@@ -19,9 +19,15 @@ the security model (§8), and field notes from every milestone (§15–§29).
 
 ## Status
 
-**v1 (M0–M4) and M5 are complete, released as 0.2.2.** 328 tests, 91% coverage, CI
-green on 3.10–3.13, and the suite also passes against the *installed* package (§28).
-The whole loop has run for real: video → note → scan → owner's `y` → live skill.
+**v1 (M0–M4) and M5 are complete, released as 0.2.2 and installable by anyone.** 328 tests,
+91% coverage, CI green on 3.10–3.13 — and a second CI job runs the suite against the
+*installed* package, because `conftest.py` puts `src/` on `sys.path` and nothing had ever
+tested the published wheel (§29). The whole loop has run for real: video → note → scan →
+owner's `y` → live skill.
+
+**Nobody is using it.** Three days after release: 0 stars, 0 forks, 0 watchers. The install
+works — verified from the outside (§28). It has simply never been shown to anyone, which is
+the actual next problem and not an engineering one.
 
 **A channel run has now completed end to end (§26).** `@GregIsenberg`, 10 triaged, owner
 picked 3, three notes and one digest written, six videos in the ledger. The `HTTP 429` that
@@ -110,7 +116,9 @@ work:
 8. **What activates is exactly what was scanned**, including file mode (§21).
 9. **Edit with exact-match replacements that fail loudly.** A silent `str.replace` hid
    stale references *and* a live padding quota for a week (§22). Verify by grepping for
-   the intended result.
+   the intended result. When a status bullet here becomes false, **delete it in the same
+   pass that makes it false** — this file had two bullets four lines apart saying opposite
+   things about the same files (§29).
 10. **The owner picks what gets read.** Channels are triaged from metadata; the class is
     a guess; nothing processes a whole channel on its own initiative.
 11. **A brief states what must be true, never what to return on failure** (§23). Writing
@@ -141,41 +149,33 @@ Notes for all three are in `/mnt/d/LearningVault/Sources/`.
 
 ## What to build next
 
-**Caption downloads work again (§24–§25).** One subtitle request per video instead of
-two, `en-orig` preferred over the translated `en` track that YouTube refuses outright, a
-fall-through to the next track when one is refused, backoff for a genuine 429, and a
-`captions` column in `sla queue`. The "rate limit" that blocked the first channel run was
-a per-track refusal wearing a 429; both blocked videos read in one request each once the
-right track was asked for.
+**1. Put examples in the repo (§29).** Six real notes exist and a visitor can see none of
+them, so they cannot tell whether this is worth three commands — and nobody installs a CLI
+to find out. Half a day, and the highest-leverage thing left. The Software Factory note
+shows a scanned proposal; the WebMCP note shows the `medium` / `manual` split; the Meta
+Muse note shows `proposals: []` as a correct answer.
 
-**It is a plugin now, and the install was tested rather than asserted (§28).** Both
-manifests validate strict; the plugin was installed from a local marketplace and costs
-~142 tokens always-on; the CLI was verified from a non-editable clean-room install with an
-isolated `SLA_HOME`, including offline brief, note render, and all three scanner states;
-and 315 tests pass against the *installed* package on 3.12 and 3.10. Install is
-`uv tool install git+...` plus `claude plugin marketplace add` — no clone, no venv, no
-symlink, no hand copies.
+**2. Then tell people**, with the notes as the argument rather than the README.
 
-**The engineering is ahead of the distribution (§29).** Three days after release: 0 stars,
-0 forks, 0 watchers. Nothing is wrong with the install — nobody has been told. In order:
-**examples in the repo** (six real notes exist, none visible to a visitor, and nobody
-installs a CLI to find out whether the output is good); then telling people, with the notes
-as the argument; then `sla doctor`, PyPI (the name is free), and M6.
+**3. `sla doctor`.** A two-part install (CLI + plugin), an optional scanner with three
+states, and a separately-versioned plugin have already produced three install-shaped
+failures: a hand-copied skill stale for three weeks (§26), a version-gated plugin cache
+(§28), and a version the CLI misreported through two releases (§29). One command printing
+CLI version, plugin version, yt-dlp, scanner + provider, vault and staged-skills paths —
+with skew flagged — turns each of those from silent wrong behaviour into a visible line.
 
-Still open: it has only ever run on WSL.
+Then, roughly by value:
 
-**Hosting is scoped and not recommended yet (§27).** ~$0.20 a note, and the inventory it
-would have to drop is 48–68% of every brief *and* the part that made the notes good.
-Host a static showcase of pre-rendered notes instead.
-
-Roughly by value:
-
-- **Close the apply-flow gaps** (below) — small, and they are the last rough edges in a
-  loop that now runs for real.
+- **PyPI**, to drop the git URL from the install line. `self-learning-agent` is free.
+- **Close the apply-flow gaps** (below) — the last rough edges in a loop that runs for real.
 - **M6: scheduled polling.** `sla queue` is the natural core; the open question is how a
   run *without the owner present* respects Rule 10 — likely: queue and digest the triage
   table, never process.
-- **M7: the frontend** the owner asked for at the start. Needs a design conversation first.
+- **M7: the frontend.** Scoped in §27 and **not recommended yet**: ~$0.20 a note, it cannot
+  apply anything, and the inventory it would have to drop is 48–68% of every brief *and*
+  the part that made the notes good. Host a static showcase of pre-rendered notes instead.
+
+Still open: it has only ever run on WSL.
 
 Open questions (PLAN §14): vault folder structure; whether `none`-risk auto-apply is
 opt-in or always-confirm.
@@ -185,11 +185,15 @@ opt-in or always-confirm.
 - **Re-running `sla note` resets a video.** It rewrites the note (clearing the Applied
   section) and the stored proposals (clearing applied tracking), and sets status back to
   `pending-review`.
-- **Restaging overwrites the repo copy.** `sla apply` rewrites
-  `generated-skills/<name>/SKILL.md` from the proposal each run, so a hand edit there is
-  lost rather than scanned.
+- **Restaging overwrites the staged copy.** `sla apply` rewrites
+  `<generated_skills_dir>/<name>/SKILL.md` from the proposal each run, so a hand edit
+  there is lost rather than scanned. The directory is `Config.generated_skills_dir` — the
+  checkout's `generated-skills/` here, `SLA_HOME/generated-skills` for an installed copy
+  (§28).
 - **The drift check promised in PLAN §8 Rule 6 is not implemented** — `sla status` does
-  not diff repo copies against live skills.
+  not diff staged copies against live skills. Less urgent for the first-party skill now
+  that the plugin owns updates, but *generated* skills are still copied into
+  `~/.claude/skills/` with nothing comparing them afterwards.
 - **`p2` on the Greg note is still awaiting review** (status `partial`).
 - **Four proposals from the 2026-09-25 batch are unreviewed** — `_LCeJZFIsd4` `p1` (a
   before/after proof skill, risk `none`) and `p2` (a scoring PR reviewer, `high`/manual);
@@ -201,52 +205,57 @@ opt-in or always-confirm.
   reach you only after a push plus a version bump. That is deliberate — it means you test
   the path strangers use — but it does make the dev loop slower than editing in place.
 - **Editing a skill does not change the installed plugin until the version bumps.** The
-  plugin is a versioned copy in `~/.claude/plugins/cache/.../0.1.0/`, and
+  plugin is a versioned copy in `~/.claude/plugins/cache/.../<version>/`, and
   `claude plugin update` compares versions, so a repo edit alone reaches nobody. Bump
   `version` in both manifests (`claude plugin tag` checks they agree), then
   `marketplace update` and `plugin update` (§28).
-- **Two copies of the skill are live on this machine.** The hand copies in
-  `~/.claude/skills/learn-from-source` and `~/.claude/commands/learn-from.md` are still
-  there *and* the plugin now provides both. Remove the hand copies so there is one source
-  and the staleness trap cannot come back — that trap is what gave `/learn-from @handle`
-  a pre-M5 procedure for three weeks (§26).
 - Triage's class guess is heuristic and misfires at the margin (§22, §26).
 - Coverage gap is mostly `cli.py` at 70%.
 - Vision on video frames is deferred.
 
 ## Prompt for a new session
 
-> I'm building `self-learning-agent`, an open-source pipeline that turns YouTube videos
-> and channels into Obsidian notes plus human-approved tool setup. Read `HANDOVER.md` and
-> `PLAN.md` in this repo — PLAN.md is the source of truth for decisions.
+Paste this verbatim. It is written for a session where you want to **ask questions**, not
+start work.
+
+> I'm building `self-learning-agent`, an open-source Claude Code plugin that turns YouTube
+> videos and channels into Obsidian notes plus human-approved tool setup. Read
+> `HANDOVER.md` and `PLAN.md` in this repo first — **PLAN.md is the source of truth** for
+> every decision, and §15–§29 are field notes from each milestone and each thing that went
+> wrong.
 >
-> v1 (M0–M4) and M5 are complete: fetch, inventory, synthesis, an approval gate that scans
-> with SkillSpector before activating anything, and channel triage with batch digests. 315
-> tests, 91% coverage, CI green on 3.10–3.13. A full channel run has completed for real —
-> `@GregIsenberg`, 10 triaged, 3 picked, three notes and a digest (§26). `sla` is on PATH
-> and `/learn-from <url | @handle>` works in any session.
+> **I want to ask you questions about this project. Answer them. Do not start building
+> anything, do not refactor, and do not change files unless I ask you to.** If a question
+> needs you to read code or run something read-only to answer it accurately, do that —
+> I'd rather you check than guess, and this project's field notes exist because guessing
+> has cost it real time.
 >
-> Two things are waiting. **Four proposals from that batch are unreviewed** and `sla apply`
-> is mine to run, not yours. **The live `learn-from-source` skill has drifted** — the copy
-> in `~/.claude/skills/` predates M5, has no Channels section, and tells the agent to run
-> `sla brief @handle`, which silently reads only the newest video. Syncing it activates a
-> skill, so ask me first.
+> Where it stands: v1 (M0–M4) and M5 are complete and **released as 0.2.2**, installable by
+> anyone with `uv tool install git+https://github.com/Soham-1827/Self-Learning-Agent-Claude.git`
+> plus `claude plugin marketplace add Soham-1827/Self-Learning-Agent-Claude`. 328 tests, 91%
+> coverage, CI green on 3.10–3.13 with a second job that tests the installed wheel. A full
+> channel run has completed for real — `@GregIsenberg`, 10 triaged, 3 picked, three notes
+> and a digest. **And nobody uses it: 0 stars, 0 forks, 0 watchers.** The install works;
+> it has never been shown to anyone.
 >
-> Then, roughly by value: the drift check promised in §8 Rule 6 (`sla status` does not diff
-> repo copies against live skills — the bug above is exactly what it would catch); the
-> apply-flow gaps in "Known unfinished"; M6 scheduled polling, where the open question is
-> how a run with nobody present respects "I pick what gets read"; and M7, the frontend,
-> which needs a design conversation first.
+> What's queued, in order: examples in the repo so a visitor can see a note before
+> installing; then telling people; then `sla doctor`; then PyPI, M6 scheduled polling, and
+> M7 — which §27 scopes and argues against for now. Four proposals from the 2026-09-25
+> batch are unreviewed and `sla apply` is **mine** to run, never yours.
 >
-> Load-bearing rules: the description is authoritative for entity names and the transcript
-> for reasoning (§15); the agent never emits a shell string (§8 Rule 1); a scan blocks
-> activation, never a download (§18); empty output beats invented output (I3, §7.2) — one
-> of those three notes correctly proposed nothing; what activates is exactly what was
-> scanned (§21); edits use exact-match replacements that fail loudly (§22); a failure must
-> never look like an absence, and a missing field is not a negative answer (§23, §24);
-> when a failure repeats identically, vary the request before blaming the responder (§25);
-> and I pick what gets read.
+> Load-bearing rules, all earned the hard way: the description is authoritative for entity
+> names and the transcript for reasoning (§15); the agent never emits a shell string (§8
+> Rule 1); a scan blocks activation, never a download (§18); empty output beats invented
+> output — one of those three notes correctly proposed nothing (I3, §7.2); what activates
+> is exactly what was scanned (§21); edits use exact-match replacements that fail loudly
+> (§22); a failure must never look like an absence, and a missing field is not a negative
+> answer (§23, §24); when a failure repeats identically, vary the request before blaming
+> the responder (§25); a guard written after its bug is worth nothing until you prove it
+> can fail (§29); and **I pick what gets read**.
 >
-> Environment: WSL, checkout on `/mnt/d` (DrvFs — files read 0777, chmod ignored). Use the
-> uv venv at `.venv`; never sudo. Verify on the CI matrix, not just 3.14. `git pull
-> --ff-only` before committing. Never run `sla apply --yes` or answer its prompts for me.
+> Environment: WSL, checkout on `/mnt/d` (DrvFs — files read 0777, `chmod` ignored). Use
+> the uv venv at `.venv`; never `sudo`. Verify on the CI matrix, not just the dev
+> interpreter. `git pull --ff-only` before committing. Changing a skill needs a version
+> bump in both manifests plus a push before it reaches even my own machine, because the
+> plugin installs from GitHub here like everyone else. Never run `sla apply --yes` or
+> answer its prompts for me.
