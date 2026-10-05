@@ -6,7 +6,7 @@
 > vault note with validated proposals; `/learn-from @channel` triages a creator's
 > latest uploads for you to pick from; `sla apply` reviews proposals one at a time
 > behind a SkillSpector scan. Nothing is ever applied without you saying yes.
-> 344 tests, 91% coverage, CI on Linux, macOS and Windows across Python
+> 368 tests, 91% coverage, CI on Linux, macOS and Windows across Python
 > 3.10–3.13. Architecture is in
 > [PLAN.md](PLAN.md); to pick the work up cold, read [HANDOVER.md](HANDOVER.md).
 
@@ -43,6 +43,7 @@ sla brief "<url>" --out brief.json   # gather one video
 sla note  "<url>" --synthesis s.json # render its note
 sla digest <id> <id> ...             # one note linking a processed batch
 sla apply "<url>"                    # review proposals, one at a time
+sla doctor                           # check the install and report any skew
 ```
 
 It pulls the transcript, description, and chapters; checks what you already have
@@ -174,6 +175,34 @@ There are three honest states, and `sla apply` tells you which one you are in:
 Nothing else is gated this way. A scan blocks *activation*, never a download (§18),
 and registry packages are never scanned — SkillSpector does not analyse them, and
 `sla apply` says so rather than implying a clean bill of health.
+
+### Check the install: `sla doctor`
+
+Which of those three scanner states you are in — and whether anything else
+disagrees with itself — is one command:
+
+```
+$ sla doctor
+[ok  ] cli version            0.2.2
+[ok  ] plugin version         0.2.2
+[ok  ] hand-copied skill      none
+[ok  ] yt-dlp                 2026.08.19
+[ok  ] scanner                /home/you/.local/bin/skillspector (openai)
+[ok  ] harness                claude-code
+[ok  ] home                   /home/you/.self-learning-agent
+[ok  ] vault                  /home/you/LearningVault/Sources
+[ok  ] staged skills          /home/you/.self-learning-agent/generated-skills
+[ok  ] install_mode           copy
+
+everything checks out
+```
+
+It writes nothing, never prints a secret value, and exits non-zero only on a
+`FAIL`. Every line exists because something shipped broken once: a hand-copied
+skill that went stale for three weeks, a version-gated plugin cache, a staged
+skill written inside the installed venv, and a CLI that misreported its own
+version through two releases (PLAN §26, §28, §29). Each of those was silent;
+each is now a line. Paste the output into a bug report.
 
 ### From source, for contributing
 

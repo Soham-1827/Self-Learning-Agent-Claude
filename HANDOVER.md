@@ -19,7 +19,7 @@ the security model (§8), and field notes from every milestone (§15–§29).
 
 ## Status
 
-**v1 (M0–M4) and M5 are complete, released as 0.2.2 and installable by anyone.** 344 tests,
+**v1 (M0–M4) and M5 are complete, released as 0.2.2 and installable by anyone.** 368 tests,
 91% coverage, **CI green on Linux, macOS and Windows** across 3.10–3.13 — and a second job
 runs the suite against the *installed* package on all three, because `conftest.py` puts
 `src/` on `sys.path` and nothing had ever tested the published wheel (§29). The whole loop
@@ -157,12 +157,14 @@ Muse note shows `proposals: []` as a correct answer.
 
 **2. Then tell people**, with the notes as the argument rather than the README.
 
-**3. `sla doctor`.** A two-part install (CLI + plugin), an optional scanner with three
-states, and a separately-versioned plugin have already produced three install-shaped
-failures: a hand-copied skill stale for three weeks (§26), a version-gated plugin cache
-(§28), and a version the CLI misreported through two releases (§29). One command printing
-CLI version, plugin version, yt-dlp, scanner + provider, vault and staged-skills paths —
-with skew flagged — turns each of those from silent wrong behaviour into a visible line.
+**3. ~~`sla doctor`~~ — done.** Ten checks, each traceable to something that shipped
+broken: CLI and plugin versions with skew flagged, a hand-copied first-party skill (§26),
+yt-dlp via the same resolver the fetch path uses, the scanner's three states, detected
+harnesses (§31), and the vault and staged-skills paths including a `FAIL` when staging
+resolves inside an installed venv (§28). Writes nothing, prints no secret value, exits
+non-zero only on a `FAIL`. Two of its own checks were false positives on the first real
+run and are now pinned by tests — `shutil.which("yt-dlp")` missed a module-only install,
+and `~/.agents/skills` was read as evidence of Codex when it is a vendor-neutral path.
 
 Then, roughly by value:
 

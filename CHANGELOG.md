@@ -20,6 +20,13 @@ Design decisions and the reasoning behind each change live in
   Windows decodes as cp1252 and which mangled every em dash and middot. (§30)
 
 ### Added
+- **`sla doctor`** — ten checks on what is actually installed here, each
+  traceable to something that shipped broken: CLI and plugin versions with skew
+  flagged, a hand-copied first-party skill (§26), yt-dlp resolved the same way
+  the fetch path resolves it, the scanner's three states, detected harnesses
+  (§31), and the vault and staged-skills paths, with a `FAIL` when staging
+  resolves inside an installed venv (§28). Writes nothing, prints no secret
+  value, exits non-zero only on a `FAIL`.
 - `examples/` — the six real notes and the six `proposals.json` stores they came
   with, copied byte for byte out of the author's vault, plus an index explaining
   what each one demonstrates. Half of them propose nothing, which is the output

@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 from dataclasses import asdict
 
-from . import __version__, config as config_mod
+from . import __version__, config as config_mod, doctor
 from .cache import Cache
 from .inventory import collect as collect_inventory
 from .ledger import Ledger, processed_ids
@@ -342,6 +342,18 @@ def cmd_status(args) -> int:
     return 0
 
 
+def cmd_doctor(args) -> int:
+    """What is installed, and where it disagrees with itself.
+
+    Exits non-zero only on a FAIL, so it is usable in a script. A warning is
+    something to know about, not something that stops the tool working.
+    """
+    cfg = config_mod.load()
+    checks = doctor.run_checks(cfg)
+    print(doctor.report(checks))
+    return 1 if doctor.worst(checks) == doctor.FAIL else 0
+
+
 def _positive_int(value: str) -> int:
     number = int(value)
     if number < 1:
@@ -413,6 +425,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     status = sub.add_parser("status", help="show config and processing history")
     status.set_defaults(func=cmd_status)
+
+    doctor_p = sub.add_parser(
+        "doctor", help="check the install: versions, scanner, paths, and any skew")
+    doctor_p.set_defaults(func=cmd_doctor)
     return parser
 
 
