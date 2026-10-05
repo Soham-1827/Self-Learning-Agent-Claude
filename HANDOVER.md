@@ -15,11 +15,11 @@ installs.
   videos teach. Notes should serve that, not just summarise.
 
 **[PLAN.md](PLAN.md) is the source of truth.** Decisions D1–D7, improvements I1–I4,
-the security model (§8), and field notes from every milestone (§15–§28).
+the security model (§8), and field notes from every milestone (§15–§29).
 
 ## Status
 
-**v1 (M0–M4) and M5 are complete, released as 0.2.1.** 320 tests, 91% coverage, CI
+**v1 (M0–M4) and M5 are complete, released as 0.2.2.** 328 tests, 91% coverage, CI
 green on 3.10–3.13, and the suite also passes against the *installed* package (§28).
 The whole loop has run for real: video → note → scan → owner's `y` → live skill.
 
@@ -156,10 +156,13 @@ and 315 tests pass against the *installed* package on 3.12 and 3.10. Install is
 `uv tool install git+...` plus `claude plugin marketplace add` — no clone, no venv, no
 symlink, no hand copies.
 
-Still open from §27–§28: **push** (the blocker above); add a CI job that tests the
-installed package, since `conftest.py` inserts `src/` and the current suite never does;
-publish to PyPI if you want `uv tool install self-learning-agent` without the git URL (the
-name is free); and it has still only ever run on WSL.
+**The engineering is ahead of the distribution (§29).** Three days after release: 0 stars,
+0 forks, 0 watchers. Nothing is wrong with the install — nobody has been told. In order:
+**examples in the repo** (six real notes exist, none visible to a visitor, and nobody
+installs a CLI to find out whether the output is good); then telling people, with the notes
+as the argument; then `sla doctor`, PyPI (the name is free), and M6.
+
+Still open: it has only ever run on WSL.
 
 **Hosting is scoped and not recommended yet (§27).** ~$0.20 a note, and the inventory it
 would have to drop is 48–68% of every brief *and* the part that made the notes good.

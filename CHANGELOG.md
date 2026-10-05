@@ -1,0 +1,76 @@
+# Changelog
+
+Versions are plugin versions; the CLI and the plugin ship together and share one
+number. `claude plugin update self-learning-agent` moves you between them.
+
+Design decisions and the reasoning behind each change live in
+[PLAN.md](PLAN.md) — the section numbers below point there.
+
+## 0.2.2 — 2026-10-05
+
+### Fixed
+- `sla --version` reported `0.1.0` while 0.2.1 was published. The version was a
+  literal in `__init__.py` and had been missed by both releases; it is now read
+  from installed metadata, so `pyproject.toml` is the only place a Python version
+  is declared. (§29)
+
+### Added
+- Packaging guards (`tests/test_packaging.py`): the declared versions must agree
+  across `pyproject.toml`, `plugin.json` and the marketplace entry; `author` must
+  be an object; declared component paths must exist; no version literal may
+  return. Each was checked by mutation — reintroduce the bug and exactly one test
+  fails.
+- A CI job that installs non-editable and runs the suite against `site-packages`
+  with no `src/` in reach, plus a step asserting the reported version matches the
+  declared one. `conftest.py` puts `src/` on `sys.path`, so until now nothing in
+  CI had ever tested the published artifact. (§29)
+- This changelog.
+
+## 0.2.1 — 2026-10-02
+
+### Fixed
+- A staged skill — D7's *reviewable* copy, the one you are meant to read before
+  activating — was written to `Path(__file__).parents[2]`, which in an installed
+  copy is a library directory inside the tool's own venv: in no repository,
+  invisible to its owner, and deleted by the next `uv tool upgrade`. The path is
+  now decided by `Config.generated_skills_dir`, preferring an explicit
+  `generated_skills_path`, then a real checkout, then `SLA_HOME`. (§28)
+- Never a hole in the gate: scans always read a scratch copy, and activation read
+  back what it had just written, so skills activated and matched what was scanned.
+  What broke was the review.
+
+### Added
+- `generated_skills_path` in `config.json`.
+
+## 0.2.0 — 2026-10-02
+
+The first version that can actually be installed.
+
+### Fixed
+- `.claude-plugin/plugin.json` had carried `"author"` as a string since the first
+  milestone, where an object is required, and there was no `marketplace.json` at
+  all — so this had never been installable as a plugin, and copying `skills/` into
+  `~/.claude/` by hand was the only thing that worked. That copy has no update
+  path and silently taught a superseded procedure for three weeks. (§26, §28)
+- Caption downloads. `--sub-langs "en.*"` matched two tracks and spent two
+  requests, and YouTube refuses the translated `en` auto-caption track
+  indefinitely while serving `en-orig` normally — a per-track refusal wearing an
+  `HTTP 429`. One track is now requested, `-orig` first, with a fall-through to
+  the next when one is refused. (§23, §25)
+- A failed caption download is no longer cached as "this video has no captions",
+  and a rate limit is retried with bounded backoff rather than failing the run.
+  (§23, §24)
+
+### Added
+- `sla queue` reports caption availability (`manual` / `auto` / `none` /
+  `unknown`), ranks videos with no captions last, and shows `—` rather than an
+  invented word estimate for them. (§24)
+- `ytdlp_attempts` and `ytdlp_backoff_seconds` in `config.json`.
+- Install as a plugin: `claude plugin marketplace add` plus
+  `claude plugin install`, and `uv tool install` for the CLI.
+
+## 0.1.0 — unreleased
+
+Milestones M0–M5 were built under this number, and it was never installable: the
+plugin manifest was invalid for its whole life. Listed for completeness; nothing
+ever shipped with it.

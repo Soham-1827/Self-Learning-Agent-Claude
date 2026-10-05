@@ -1510,3 +1510,82 @@ so no test can reach the repo and no assertion depends on where the repo lives.
 Verified in both shapes: the installed copy resolves to `SLA_HOME/generated-skills` with
 nothing written inside the venv, and the checkout still resolves to its own
 `generated-skills/`. 320 tests.
+
+---
+
+## 29. Field notes: a trust pass, after noticing nobody had arrived (2026-10-05)
+
+Three days after release: 0 stars, 0 forks, 0 watchers. Not a failure — a signal that the
+engineering had moved ahead of the distribution. Nothing was wrong with the install; nobody
+had been given a reason or a route to it. This section is the engineering half of the
+response, kept deliberately narrow.
+
+### A tool that misreported its own version
+
+`sla --version` said `0.1.0`, three days after 0.2.1 was published and tagged.
+
+| Declared in | Said |
+|---|---|
+| `pyproject.toml` | 0.2.1 |
+| `.claude-plugin/plugin.json` | 0.2.1 |
+| marketplace entry | 0.2.1 |
+| `src/self_learning_agent/__init__.py` | **0.1.0** |
+
+Four places, and the fourth was missed by both releases. `claude plugin tag` validates the
+middle two against each other and knows nothing about Python, so nothing caught it.
+
+Not a cosmetic bug. A tool that is wrong about its own version makes every other thing it
+reports arguable, and it is the one fact a user quotes in a bug report.
+
+Fixed by removing the source rather than syncing it: `__version__` is read from installed
+metadata, so `pyproject.toml` is the only place a Python version is declared. On a real
+install that tracks the wheel by construction. On a stale editable checkout it reports what
+is *actually installed*, which is the honest answer and a hint to reinstall.
+
+### The suite had never tested what gets published
+
+`tests/conftest.py` does `sys.path.insert(0, .../src)`. That is right for the dev loop and
+it means every one of the 320 tests — and CI, which installs editable — imported the source
+tree. **A packaging error was invisible to the entire suite.**
+
+There is now a second CI job that installs non-editable and runs the suite from a directory
+with no `src/` in reach, on 3.10 and 3.13, plus a step asserting that the version `sla`
+reports equals the version `pyproject.toml` declares. Simulated locally before pushing,
+because a typo found by a red CI run is a typo found expensively: **320 passed, 8 skipped**,
+the skips being the new guards standing down where there is no checkout to check.
+
+### Guards, and proof that they bite
+
+`tests/test_packaging.py` pins what the published manifests must contain — versions agree
+across all three files, `author` is an object, declared component paths exist on disk, no
+version literal returns, no email is published in a public manifest.
+
+A regression guard written after the fact is worth nothing if it cannot fail, so each was
+mutation-tested against the original bug:
+
+| Mutation | Result |
+|---|---|
+| `author` back to a string | `test_author_is_an_object_not_a_string` fails, 7 pass |
+| one file's version bumped alone | `test_every_declared_version_agrees` fails, 7 pass |
+| `./skills/` typo'd to `./skils/` | `test_declared_component_paths_exist[skills]` fails, 7 pass |
+| a version literal re-added | `test_the_package_declares_no_version_of_its_own` fails, 7 pass |
+
+Each mutation fails exactly its own test and nothing else. The guards are not decorative,
+and the shape of this table is worth repeating for any test written after its bug.
+
+> Three of the four things fixed in this pass were *checks that did not exist*, not code
+> that was wrong. The invalid manifest, the untested wheel, and the drifting version all
+> survived because nothing asked. That is the pattern to watch for in a project whose
+> author is also its only user.
+
+Also added: a `CHANGELOG.md`, because `claude plugin update` reported "0.2.0 → 0.2.1" and
+gave no way to find out what that meant.
+
+### Still the real work
+
+Nothing in this section makes anyone use it. The ordered list is unchanged:
+
+1. **Examples in the repo.** Six real notes exist and not one is visible to a visitor, who
+   cannot tell whether this is worth three commands. Nobody installs a CLI to find out.
+2. **Tell people**, with the notes as the argument rather than the README.
+3. `sla doctor`, PyPI, M6.

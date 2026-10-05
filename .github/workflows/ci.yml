@@ -3,6 +3,7 @@ on: [push, pull_request]
 
 jobs:
   test:
+    name: suite
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -14,3 +15,35 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
       - run: pytest --cov=self_learning_agent --cov-report=term-missing
+
+  packaged:
+    # The suite normally imports from src/, because conftest.py puts it on
+    # sys.path. That is right for the dev loop and means nothing here ever
+    # tested the wheel: a packaging error was invisible to all of it.
+    name: the installed package, not the source tree
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: install non-editable
+        run: pip install . pytest
+
+      - name: the version it reports is the version it declares
+        run: |
+          declared=$(grep '^version' pyproject.toml | cut -d'"' -f2)
+          reported=$(sla --version)
+          echo "declared=$declared  reported=$reported"
+          test "$declared" = "$reported"
+
+      - name: run the suite with no src/ in reach
+        run: |
+          mkdir -p "$RUNNER_TEMP/pkgtest"
+          cp -r tests pyproject.toml "$RUNNER_TEMP/pkgtest/"
+          cd "$RUNNER_TEMP/pkgtest"
+          python -c "import pathlib, self_learning_agent as p; w = pathlib.Path(p.__file__); assert 'site-packages' in str(w), f'imported from {w}, not the installed package'; print('importing from', w.parent)"
+          python -m pytest -q
