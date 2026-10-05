@@ -24,6 +24,9 @@ definitely haven't set it up.
 This turns that firehose into two things you can use: **a note in your vault**, and
 **a list of setup actions you explicitly approve**.
 
+Before installing anything, read what it actually produces:
+**[six real notes, unedited, in `examples/`](examples/)**.
+
 ## What it does
 
 ```bash
@@ -291,17 +294,29 @@ security model enforceable.
 
 ## What it looks like on real videos
 
-Three sources have been run end to end, chosen to stress different parts of the design:
+**[Read the notes in `examples/`.](examples/)** Six videos, three creators, unedited —
+plus the `proposals.json` files `sla apply` reads, so the security model is something
+you can check rather than take on trust.
 
-| Video | Class | Result |
-|---|---|---|
-| *5 GitHub Repos* (Greg Isenberg) | `tooling` | 3 proposals — one dropped because `brand-voice` already covered it |
-| *How to beat low stakes poker* | `conceptual` | 0 proposals, 2 project ideas |
-| *How the Periodic Table Works* (StarTalk) | `conceptual` | 0 proposals, 1 project idea |
+| Video | Class | Proposals | Ideas |
+|---|---|---|---|
+| [*Building a Software Factory*](examples/notes/2026-09-14%20Building%20a%20Software%20Factory%20that%20actually%20works%20%28Full%20Course%29%20%28_LCeJZFIsd4%29.md) (Greg Isenberg) | `tooling` | 2 | 1 |
+| [*WebMCP: Let AI Agents pay you money*](examples/notes/2026-08-26%20WebMCP%20Let%20AI%20Agents%20pay%20you%20money%20%28EoNH3Tn8wYE%29.md) (Greg Isenberg) | `mixed` | 2 | 2 |
+| [*5 GitHub Repos*](examples/notes/2026-09-02%205%20GitHub%20Repos%20Kill%20AI%20Slop%2C%20Go%20Viral%2C%20Make%20Money%20%289_SZFIW7tus%29.md) (Greg Isenberg) | `tooling` | 3 | 2 |
+| [*Meta Muse AI Connectors*](examples/notes/2026-09-24%20Meta%20Muse%20AI%20Connectors%20The%20App%20Store%20for%20AI%20%2884q4WA3kA8Q%29.md) (Greg Isenberg) | `conceptual` | **0** | 4 |
+| [*How to beat low stakes poker*](examples/notes/2026-06-25%20How%20to%20beat%20low%20stakes%20poker%21%20%28Every%20Strategy%29%20%28gPPT4WpVRZ4%29.md) (BlackRain79Poker) | `conceptual` | **0** | 2 |
+| [*How the Periodic Table Works*](examples/notes/2026-09-03%20Neil%20deGrasse%20Tyson%20Explains%20How%20the%20Periodic%20Table%20Works%20%28UpE5yuhwXXc%29.md) (StarTalk) | `conceptual` | **0** | 1 |
 
-The poker and periodic-table videos have no chapters, no GitHub links, and nothing
-installable. They still produce notes worth keeping — and correctly propose nothing.
-That is the design working, not failing.
+Half of them proposed nothing. The *Meta Muse* video is about AI connectors and the
+channel triage guessed `likely tooling` from its description — the note classified it
+`conceptual`, proposed nothing, said the guess was wrong, and spent its length on four
+project ideas instead. The poker and periodic-table videos have no chapters, no GitHub
+links, and nothing installable. They still produce notes worth keeping.
+
+That is the design working, not failing. Also in `examples/`: the
+[digest](examples/notes/2026-09-25%20Digest%20-%20Greg%20Isenberg.md) that closed the
+`@GregIsenberg` channel run — ten videos triaged, three picked, and the Software
+Factory, WebMCP and Meta Muse notes written from them.
 
 ## Known limitations
 

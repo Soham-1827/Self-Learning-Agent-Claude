@@ -1,0 +1,37 @@
+{
+  "source_id": "EoNH3Tn8wYE",
+  "note_path": "/mnt/d/LearningVault/Sources/2026-08-26 WebMCP Let AI Agents pay you money (EoNH3Tn8wYE).md",
+  "proposals": [
+    {
+      "id": "p1",
+      "kind": "repo_clone",
+      "title": "Clone the WebMCP espresso store reference implementation",
+      "rationale": "This is the only place the actual API surface exists -- the episode never speaks a function or manifest name, so the tool declarations cannot be learned from the transcript. The repo is offered for exactly this in the description, and it carries 16 working tools including the conditional logged-in set, which is the mechanism worth reading. Nothing installed here overlaps: playwright, browser-use and browserbase are MCP servers for driving a browser, and browser-qa automates visual checks -- all of them the reading end of this episode's own map. WebMCP is the opposite side, something a site declares about itself, so there is no client to install and a repo is the only artifact.",
+      "evidence": {
+        "quote": "You can also click on the GitHub repo button down there next to the WebMCP tools pill and you can clone this repo and you can play around with it, make your own version, whatever.",
+        "timestamp": "26:11"
+      },
+      "action": {
+        "repo": "vincanger/webmcp-espresso-store",
+        "host": "github.com"
+      },
+      "reversible": true,
+      "undo": "rm -rf webmcp-espresso-store"
+    },
+    {
+      "id": "p2",
+      "kind": "manual",
+      "title": "Chrome flags needed before any of this runs -- including one worth thinking about",
+      "rationale": "The demo does not work in a default browser, and the episode gives the two settings in passing at 26:11. The second one deserves more care than it gets there: allowing remote debugging opens a control channel to your browser that any local process can attach to, and that browser is the one holding your logged-in sessions -- which is the same session WebMCP deliberately uses as its auth layer. Convenient for the demo, and a wide door. Left manual so the decision is yours, and so it is a deliberate act rather than something a tool did for you.",
+      "evidence": {
+        "quote": "Go into Chrome flags, enable WebMCP support and go into Chrome inspect and allow remote debugging. So these are the things that you'll want to enable so that you can start using these experimental features.",
+        "timestamp": "26:11"
+      },
+      "action": {
+        "detail": "Two settings, both experimental. 1) chrome://flags -- enable WebMCP support. 2) Allow remote debugging via Chrome's inspect settings. Strongly preferred: do this in a separate Chrome profile, or a throwaway one, that holds no logged-in sessions you care about. Remote debugging lets any local process drive that browser and read what it can read, and WebMCP's whole auth model is that the browser session is the credential. Turn both off when you are done experimenting; neither should be left on in the browser you use day to day."
+      },
+      "reversible": true,
+      "undo": "Disable the WebMCP flag in chrome://flags and turn remote debugging back off, or delete the throwaway profile."
+    }
+  ]
+}

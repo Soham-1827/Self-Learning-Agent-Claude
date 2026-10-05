@@ -1,0 +1,38 @@
+{
+  "source_id": "_LCeJZFIsd4",
+  "note_path": "/mnt/d/LearningVault/Sources/2026-09-14 Building a Software Factory that actually works (Full Course) (_LCeJZFIsd4).md",
+  "proposals": [
+    {
+      "id": "p1",
+      "kind": "skill",
+      "title": "Add a before/after proof skill",
+      "rationale": "The proof discipline is the part of this workflow that is not already installed here. browser-qa automates visual checks and verification-before-completion gates the claim of being done, but neither produces the paired artifact this video is built around, and neither says to re-enter the build step when the after state does not show the claim. The other three steps of the factory are already covered: using-git-worktrees is isolate almost exactly, coding-standards and hexagonal-architecture cover build, and requesting-code-review covers ship. This is the gap worth filling, and it is written to be read before opening a PR.",
+      "evidence": {
+        "quote": "It will literally record the before state, meaning before the feature, or let's say you're trying to fix a bug, it will record the bug in action. And what it will do after is after it's done fixing, it will record a working version after.",
+        "timestamp": "14:48"
+      },
+      "action": {
+        "name": "before-after-proof",
+        "content": "---\nname: before-after-proof\ndescription: Use when finishing any change that has a visible or measurable surface, before opening a PR or claiming the work is done. Records the state before the change and the state after it, embeds both in the PR description, and re-enters the build step when the after state does not show the claim.\n---\n\n# Before / after proof\n\nA claim that a change works is not evidence that it works. This skill turns\n\"it works\" into an artifact someone can look at in ten seconds.\n\n## When this applies\n\nAny change with a surface a human could inspect:\n\n- UI, layout, copy, or navigation -> screenshots or a short screen recording\n- A bug fix -> the failure captured first, then the same path succeeding\n- Performance, size, or counts -> the measured pair, with units and the method\n\nIf the change has no inspectable surface at all (a pure refactor with identical\nbehaviour), say so explicitly in the PR instead of inventing a proof.\n\n## Procedure\n\n1. **Capture before, first.** Before touching the code, record the current\n   state. A bug fix with no captured failure has nothing to compare against,\n   and reconstructing the \"before\" after the fix is guesswork.\n2. **Do the work.**\n3. **Capture after, the same way.** Same viewport, same path, same inputs, same\n   measurement method. A pair captured differently is not a pair.\n4. **Read the after capture as a reviewer would.** Does it actually show the\n   claim? A screenshot of a page that loads is not proof that the new button\n   works.\n5. **If it does not, go back to step 2.** Do not open the PR. This is the step\n   that matters: the loop closes here, without anyone asking for it.\n6. **Embed both in the PR description**, labelled `Before` and `After`, with\n   one line saying what to look at. Numbers go in a two-row table with units.\n\n## Rules\n\n- **Never pair a captured before with a described after**, or the reverse. Both\n  halves are artifacts or neither is.\n- **State the measurement method for numbers.** \"815ms to 61ms\" means nothing\n  without saying what was timed, how many runs, and on what.\n- **A missing proof is a finding, not an omission.** If the surface cannot be\n  captured in this environment, write which part could not be captured and why,\n  so a reviewer knows what is unverified rather than assuming it passed.\n- **Do not delete a failed after capture.** It is the record of why the loop ran\n  again, and it belongs in the PR thread.\n\n## Why it is worth the trouble\n\nIt moves review from reading a diff to inspecting an outcome, which is the only\nform of review that works when the reviewer did not write the code and may not\nread it at all. It also catches the specific failure where an agent reports\nsuccess it never checked.\n"
+      },
+      "reversible": true,
+      "undo": "rm -rf ~/.claude/skills/before-after-proof"
+    },
+    {
+      "id": "p2",
+      "kind": "manual",
+      "title": "Consider an automated PR reviewer that returns a score",
+      "rationale": "The loop in this video terminates on a number, and nothing installed here produces one. requesting-code-review and receiving-code-review cover asking for and acting on a review, and /code-review ultra runs a multi-agent review on demand -- but all three are triggered by a person and return prose, so an agent cannot decide from them whether it is finished. Greptile is the service named in the video; Code Rabbit and Macroscope are named as alternatives. This is left as manual on purpose: it means an account with a third party and granting it read access to repositories, which is a decision to make deliberately rather than a package to install. Worth weighing against simply requiring your existing review command before merge, which costs nothing new.",
+      "evidence": {
+        "quote": "Greptile not only gives feedback, it gives a confidence score... before the feedback was addressed, this score was a three out of five. What that tells my agent is that there are things that it missed.",
+        "timestamp": "22:25"
+      },
+      "action": {
+        "detail": "Evaluate a PR-review service that exposes a machine-readable score, so an agent can loop until it passes. Named in the video: Greptile (the one demonstrated), with Code Rabbit and Macroscope as alternatives. None was linked in the description, so verify the vendor yourself before signing up. Each requires an account and GitHub repository access; review what access is granted and to which repositories. The cheaper first move is to make your existing review step a required check and see whether a score is actually the missing piece."
+      },
+      "already_have": "requesting-code-review, receiving-code-review, /code-review ultra",
+      "reversible": true,
+      "undo": "Revoke the service's GitHub app access and delete the account."
+    }
+  ]
+}

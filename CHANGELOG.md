@@ -6,6 +6,20 @@ number. `claude plugin update self-learning-agent` moves you between them.
 Design decisions and the reasoning behind each change live in
 [PLAN.md](PLAN.md) — the section numbers below point there.
 
+## Unreleased
+
+### Added
+- `examples/` — the six real notes and the six `proposals.json` stores they came
+  with, copied byte for byte out of the author's vault, plus an index explaining
+  what each one demonstrates. Half of them propose nothing, which is the output
+  worth showing. Linked from the first screen of the README, because the gap this
+  closes is that nobody installs a CLI to find out what it produces. (§29)
+- Guards for that directory (`tests/test_examples.py`): every link resolves, every
+  published file is indexed, the proposal and idea counts quoted in both READMEs
+  match the files, and every published proposal still passes the validator and
+  renders no arbitrary command. Nine tests, each checked by mutation — introduce
+  the bug and exactly that test fails.
+
 ## 0.2.2 — 2026-10-05
 
 ### Fixed
