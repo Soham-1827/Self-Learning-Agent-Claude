@@ -149,22 +149,36 @@ Notes for all three are in `/mnt/d/LearningVault/Sources/`.
 
 ## What to build next
 
-**1. Put examples in the repo (§29).** Six real notes exist and a visitor can see none of
-them, so they cannot tell whether this is worth three commands — and nobody installs a CLI
-to find out. Half a day, and the highest-leverage thing left. The Software Factory note
-shows a scanned proposal; the WebMCP note shows the `medium` / `manual` split; the Meta
-Muse note shows `proposals: []` as a correct answer.
+**Telling people is the only thing left that changes the outcome.** 0 stars three days
+after release, and nothing in the engineering list fixes that. The examples now exist to
+be the argument — so the next move is outward, not inward.
 
-**2. Then tell people**, with the notes as the argument rather than the README.
+**1. Tell people, with the notes as the argument rather than the README.** The three
+worth pointing at: the Software Factory note (the inventory changing the answer — three
+of four proposals dropped because the skills were already installed), the WebMCP note
+(the `medium` / `high`-manual split, and a security caveat the video skipped), and the
+Meta Muse note (`proposals: []` as a correct answer, from a video about AI tooling).
+Worth saying out loud, because `examples/` cannot show it: a reader's note is **not**
+these notes, because the inventory step runs against their machine.
 
-**3. ~~`sla doctor`~~ — done.** Ten checks, each traceable to something that shipped
-broken: CLI and plugin versions with skew flagged, a hand-copied first-party skill (§26),
-yt-dlp via the same resolver the fetch path uses, the scanner's three states, detected
-harnesses (§31), and the vault and staged-skills paths including a `FAIL` when staging
-resolves inside an installed venv (§28). Writes nothing, prints no secret value, exits
-non-zero only on a `FAIL`. Two of its own checks were false positives on the first real
-run and are now pinned by tests — `shutil.which("yt-dlp")` missed a module-only install,
-and `~/.agents/skills` was read as evidence of Codex when it is a vendor-neutral path.
+Done since this list was written, in case a cold session is about to redo one of them:
+
+- **~~Examples in the repo~~ (§29).** `examples/` has the six notes and the digest copied
+  byte for byte out of the vault, the six `proposals.json` stores, and an index. Linked
+  from the first screen of the README. Guarded by `tests/test_examples.py` — links
+  resolve, every file is indexed, the counts quoted in both READMEs match the files, and
+  every published proposal still passes the validator.
+- **~~`sla doctor`~~.** Ten checks, each traceable to something that shipped broken: CLI
+  and plugin versions with skew flagged, a hand-copied first-party skill (§26), yt-dlp via
+  the same resolver the fetch path uses, the scanner's three states, detected harnesses
+  (§31), and the vault and staged-skills paths including a `FAIL` when staging resolves
+  inside an installed venv (§28). Writes nothing, prints no secret value, exits non-zero
+  only on a `FAIL`. Two of its own checks were false positives on the first real run and
+  are now pinned by tests — `shutil.which("yt-dlp")` missed a module-only install, and
+  `~/.agents/skills` was read as evidence of Codex when it is a vendor-neutral path.
+- **~~Three platforms~~ (§30).** CI runs the suite and the installed wheel on Linux,
+  macOS and Windows. It found that macOS was already fine and that Windows could not
+  activate a skill at all.
 
 Then, roughly by value:
 
@@ -242,41 +256,48 @@ start work.
 > I'm building `self-learning-agent`, an open-source Claude Code plugin that turns YouTube
 > videos and channels into Obsidian notes plus human-approved tool setup. Read
 > `HANDOVER.md` and `PLAN.md` in this repo first — **PLAN.md is the source of truth** for
-> every decision, and §15–§29 are field notes from each milestone and each thing that went
+> every decision, and §15–§31 are field notes from each milestone and each thing that went
 > wrong.
 >
 > **I want to ask you questions about this project. Answer them. Do not start building
 > anything, do not refactor, and do not change files unless I ask you to.** If a question
 > needs you to read code or run something read-only to answer it accurately, do that —
 > I'd rather you check than guess, and this project's field notes exist because guessing
-> has cost it real time.
+> has cost it real time. One of those notes (§31) is a correction to an answer given from
+> memory in the same session it was asked.
 >
-> Where it stands: v1 (M0–M4) and M5 are complete and **released as 0.2.2**, installable by
-> anyone with `uv tool install git+https://github.com/Soham-1827/Self-Learning-Agent-Claude.git`
-> plus `claude plugin marketplace add Soham-1827/Self-Learning-Agent-Claude`. 328 tests, 91%
-> coverage, CI green on 3.10–3.13 with a second job that tests the installed wheel. A full
+> Where it stands: v1 (M0–M4) and M5 are complete and **released as 0.2.2**, installable
+> with `uv tool install git+https://github.com/Soham-1827/Self-Learning-Agent-Claude.git`
+> plus `claude plugin marketplace add Soham-1827/Self-Learning-Agent-Claude`. 379 tests,
+> 91% coverage, **CI green on Linux, macOS and Windows** across 3.10–3.13, with a second
+> job testing the installed wheel and a third running `twine check --strict`. A full
 > channel run has completed for real — `@GregIsenberg`, 10 triaged, 3 picked, three notes
-> and a digest. **And nobody uses it: 0 stars, 0 forks, 0 watchers.** The install works;
-> it has never been shown to anyone.
+> and a digest. `examples/` now holds those notes, unedited, and `sla doctor` reports the
+> install. **And nobody uses it: 0 stars, 0 forks, 0 watchers.** The install works and has
+> never been shown to anyone, which is the actual next problem and not an engineering one.
 >
-> What's queued, in order: examples in the repo so a visitor can see a note before
-> installing; then telling people; then `sla doctor`; then PyPI, M6 scheduled polling, and
-> M7 — which §27 scopes and argues against for now. Four proposals from the 2026-09-25
-> batch are unreviewed and `sla apply` is **mine** to run, never yours.
+> What's queued: **telling people**, with the example notes as the argument. Then PyPI —
+> packaging, guards, `RELEASING.md` and a Trusted-Publishing workflow are all ready, but
+> the upload needs me to create the publisher and push a tag, and an index filename can
+> never be reused. Then M6 scheduled polling, a second harness (Codex, scoped in §31), and
+> M7 (scoped in §27, argued against for now). Four proposals from the 2026-09-25 batch are
+> unreviewed and `sla apply` is **mine** to run, never yours.
 >
 > Load-bearing rules, all earned the hard way: the description is authoritative for entity
 > names and the transcript for reasoning (§15); the agent never emits a shell string (§8
 > Rule 1); a scan blocks activation, never a download (§18); empty output beats invented
-> output — one of those three notes correctly proposed nothing (I3, §7.2); what activates
-> is exactly what was scanned (§21); edits use exact-match replacements that fail loudly
-> (§22); a failure must never look like an absence, and a missing field is not a negative
-> answer (§23, §24); when a failure repeats identically, vary the request before blaming
-> the responder (§25); a guard written after its bug is worth nothing until you prove it
-> can fail (§29); and **I pick what gets read**.
+> output — one of those notes correctly proposed nothing (I3, §7.2); what activates is
+> exactly what was scanned, byte for byte, which is what Windows broke (§21, §30); edits
+> use exact-match replacements that fail loudly (§22); a failure must never look like an
+> absence, and a missing field is not a negative answer (§23, §24); when a failure repeats
+> identically, vary the request before blaming the responder (§25); a guard written after
+> its bug is worth nothing until you prove it can fail, and **the mutation that teaches you
+> something is the one that passes** (§29, §30); and **I pick what gets read**.
 >
 > Environment: WSL, checkout on `/mnt/d` (DrvFs — files read 0777, `chmod` ignored). Use
-> the uv venv at `.venv`; never `sudo`. Verify on the CI matrix, not just the dev
-> interpreter. `git pull --ff-only` before committing. Changing a skill needs a version
-> bump in both manifests plus a push before it reaches even my own machine, because the
-> plugin installs from GitHub here like everyone else. Never run `sla apply --yes` or
-> answer its prompts for me.
+> the uv venv at `.venv`; never `sudo`. `gh` is not installed, so CI is read through the
+> public REST API and failures are read as check-run annotations. Verify on the CI matrix,
+> not just the dev interpreter. `git pull --ff-only` before committing. Changing a skill
+> needs a version bump in both manifests plus a push before it reaches even my own machine,
+> because the plugin installs from GitHub here like everyone else. Never run
+> `sla apply --yes` or answer its prompts for me.
