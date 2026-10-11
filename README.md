@@ -6,6 +6,7 @@
 > vault note with validated proposals; `/learn-from @channel` triages a creator's
 > latest uploads for you to pick from; `sla apply` reviews proposals one at a time
 > behind a SkillSpector scan. Nothing is ever applied without you saying yes.
+> On PyPI as [`self-learning-agent`](https://pypi.org/project/self-learning-agent/).
 > 379 tests, 91% coverage, CI on Linux, macOS and Windows across Python
 > 3.10–3.13. Architecture is in
 > [PLAN.md](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/PLAN.md); to pick the work up cold, read [HANDOVER.md](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/HANDOVER.md).
@@ -124,11 +125,18 @@ Two pieces: the `sla` CLI, and the Claude Code plugin that gives you `/learn-fro
 
 ```bash
 # 1. the CLI  (Python 3.10+; installs sla onto your PATH)
-uv tool install git+https://github.com/Soham-1827/Self-Learning-Agent-Claude.git
+uv tool install self-learning-agent
 
 # 2. the plugin  (the /learn-from command and the skill behind it)
 claude plugin marketplace add Soham-1827/Self-Learning-Agent-Claude
 claude plugin install self-learning-agent@self-learning-agent
+```
+
+`pipx install self-learning-agent` or `pip install self-learning-agent` work too.
+To run an unreleased commit instead of the published version:
+
+```bash
+uv tool install git+https://github.com/Soham-1827/Self-Learning-Agent-Claude.git
 ```
 
 Inside a session you can do step 2 as `/plugin marketplace add
@@ -183,8 +191,8 @@ disagrees with itself — is one command:
 
 ```
 $ sla doctor
-[ok  ] cli version            0.2.2
-[ok  ] plugin version         0.2.2
+[ok  ] cli version            0.3.0
+[ok  ] plugin version         0.3.0
 [ok  ] hand-copied skill      none
 [ok  ] yt-dlp                 2026.08.19
 [ok  ] scanner                /home/you/.local/bin/skillspector (openai)

@@ -19,7 +19,7 @@ the security model (§8), and field notes from every milestone (§15–§29).
 
 ## Status
 
-**v1 (M0–M4) and M5 are complete, released as 0.2.2 and installable by anyone.** 379 tests,
+**v1 (M0–M4) and M5 are complete, released as 0.3.0 and on PyPI.** 379 tests,
 91% coverage, **CI green on Linux, macOS and Windows** across 3.10–3.13 — and a second job
 runs the suite against the *installed* package on all three, because `conftest.py` puts
 `src/` on `sys.path` and nothing had ever tested the published wheel (§29). The whole loop
@@ -182,14 +182,13 @@ Done since this list was written, in case a cold session is about to redo one of
 
 Then, roughly by value:
 
-- **PyPI** — packaging is ready; the upload is not done. Metadata, guards, a
-  `twine check --strict` CI job, `RELEASING.md`, and a Trusted-Publishing workflow
-  that fires on a `self-learning-agent--v*` tag all exist. `self-learning-agent` is
-  still unregistered on PyPI and TestPyPI. **Two things are the owner's:** create the
-  trusted publisher at pypi.org/manage/account/publishing/ plus a `pypi` GitHub
-  environment, then push a tag. Rehearse on TestPyPI first — an index filename can
-  never be reused, so a bad `0.3.0` burns `0.3.0` for good. The README install line
-  still points at the git URL on purpose, because the package does not exist yet.
+- **~~PyPI~~ — published.** `uv tool install self-learning-agent` as of 0.3.0
+  (2026-10-10). Trusted Publishing via `release.yml` on a `self-learning-agent--v*`
+  tag, so no token exists anywhere; the `pypi` environment has a required reviewer,
+  which held the upload for an explicit approval. Releasing again is: bump the three
+  version files, move the CHANGELOG entry, tag, push — see `RELEASING.md`. Note the
+  Simple index lags the JSON API by a minute or two, so an install straight after a
+  publish can fail with "no versions found" and is not a real failure.
 - **Close the apply-flow gaps** (below) — the last rough edges in a loop that runs for real.
 - **M6: scheduled polling.** `sla queue` is the natural core; the open question is how a
   run *without the owner present* respects Rule 10 — likely: queue and digest the triage
@@ -266,9 +265,9 @@ start work.
 > has cost it real time. One of those notes (§31) is a correction to an answer given from
 > memory in the same session it was asked.
 >
-> Where it stands: v1 (M0–M4) and M5 are complete and **released as 0.2.2**, installable
-> with `uv tool install git+https://github.com/Soham-1827/Self-Learning-Agent-Claude.git`
-> plus `claude plugin marketplace add Soham-1827/Self-Learning-Agent-Claude`. 379 tests,
+> Where it stands: v1 (M0–M4) and M5 are complete and **released as 0.3.0, on PyPI**, installable
+> with `uv tool install self-learning-agent` plus
+> `claude plugin marketplace add Soham-1827/Self-Learning-Agent-Claude`. 379 tests,
 > 91% coverage, **CI green on Linux, macOS and Windows** across 3.10–3.13, with a second
 > job testing the installed wheel and a third running `twine check --strict`. A full
 > channel run has completed for real — `@GregIsenberg`, 10 triaged, 3 picked, three notes
@@ -276,12 +275,10 @@ start work.
 > install. **And nobody uses it: 0 stars, 0 forks, 0 watchers.** The install works and has
 > never been shown to anyone, which is the actual next problem and not an engineering one.
 >
-> What's queued: **telling people**, with the example notes as the argument. Then PyPI —
-> packaging, guards, `RELEASING.md` and a Trusted-Publishing workflow are all ready, but
-> the upload needs me to create the publisher and push a tag, and an index filename can
-> never be reused. Then M6 scheduled polling, a second harness (Codex, scoped in §31), and
-> M7 (scoped in §27, argued against for now). Four proposals from the 2026-09-25 batch are
-> unreviewed and `sla apply` is **mine** to run, never yours.
+> What's queued: **telling people**, with the example notes as the argument — that is now
+> the only thing left that changes the outcome. Then M6 scheduled polling, a second harness
+> (Codex, scoped in §31), and M7 (scoped in §27, argued against for now). Four proposals
+> from the 2026-09-25 batch are unreviewed and `sla apply` is **mine** to run, never yours.
 >
 > Load-bearing rules, all earned the hard way: the description is authoritative for entity
 > names and the transcript for reasoning (§15); the agent never emits a shell string (§8
