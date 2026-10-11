@@ -6,7 +6,7 @@ number. `claude plugin update self-learning-agent` moves you between them.
 Design decisions and the reasoning behind each change live in
 [PLAN.md](PLAN.md) — the section numbers below point there.
 
-## Unreleased
+## 0.3.0 — 2026-10-10
 
 ### Fixed
 - **`sla apply` could not activate a skill on Windows at all.** `Path.write_text`
@@ -20,12 +20,13 @@ Design decisions and the reasoning behind each change live in
   Windows decodes as cp1252 and which mangled every em dash and middot. (§30)
 
 ### Added
-- **PyPI packaging, prepared but not published.** The listing metadata an index
+- **Published to PyPI.** `uv tool install self-learning-agent`. The listing metadata an index
   needs — summary, SPDX licence, author without an address, keywords,
   classifiers, project URLs — plus guards that the declared Pythons match
   `requires-python`, that no deprecated `License ::` classifier returns, and that
-  no email is published. `self-learning-agent` is unregistered on PyPI and
-  TestPyPI; the first upload is the maintainer's to trigger.
+  no email is published. This is the first release on PyPI, so the install no
+  longer needs a git URL — that stays documented for installing an unreleased
+  commit.
 - `RELEASING.md`, because the release process was tribal knowledge and forgetting
   one of its steps caused two of the bugs in §28–§29.
 - `.github/workflows/release.yml` — publishes on a `self-learning-agent--v*` tag
