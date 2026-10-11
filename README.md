@@ -121,7 +121,24 @@ that isn't allowed to go red.
 
 ## Install
 
-Two pieces: the `sla` CLI, and the Claude Code plugin that gives you `/learn-from`.
+### What you need, and what each part is for
+
+**The CLI alone cannot write a note.** That is worth saying before you install
+anything, because the note is the product:
+
+| | Gets you | Required? |
+|---|---|---|
+| **`sla` CLI** (PyPI) | fetching, caching, channel triage, the approval gate, `sla doctor` | **yes** |
+| **An agent** — Claude Code via the plugin | turns a transcript into the note. `sla note` takes the agent's JSON; it does not generate it | **yes, for notes** |
+| **[SkillSpector](https://github.com/NVIDIA/skillspector)** | scans a proposed skill before it can activate | optional — **without it, `skill` proposals are refused** |
+
+The split is deliberate: deterministic work is tested Python, judgment is the
+agent, and the seam between them is a validated JSON contract — which is what
+makes the [security model](#security) enforceable rather than a promise. The
+practical consequence is just that `sla` on its own is a fetcher. With an agent
+it is the thing described above.
+
+Two pieces, then: the `sla` CLI, and the Claude Code plugin that gives you `/learn-from`.
 
 ```bash
 # 1. the CLI  (Python 3.10+; installs sla onto your PATH)
@@ -160,6 +177,16 @@ review before it can activate (D7). That folder is
 `~/.self-learning-agent/generated-skills/` for an installed copy, or the checkout's
 own `generated-skills/` when you run from source, so it stays diffable in git.
 Override either with `SLA_HOME` or `generated_skills_path`.
+
+Then check it worked, in one command:
+
+```bash
+sla doctor
+```
+
+It prints every version, path and dependency it found, flags any skew, and exits
+non-zero only on a real failure. If something is wrong, that output is the thing
+to paste into an issue — [more below](#check-the-install-sla-doctor).
 
 ### The scanner
 
@@ -221,6 +248,66 @@ uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python -e ".[dev]"
 .venv/bin/python -m pytest
 ```
+
+## Your first run
+
+Six steps, with what each one actually does. Nothing touches your machine until
+step 5, and nothing installs until step 6.
+
+**1. Check the install.**
+
+```bash
+sla doctor
+```
+
+Expect `everything checks out`. A `warn` on the scanner is normal and fine — it
+only means `skill` proposals will be refused until SkillSpector is installed.
+
+**2. Restart Claude Code**, so the plugin's skill is loaded. A freshly installed
+plugin is not in the running session.
+
+**3. Point it at a video.** In a Claude Code session:
+
+```
+/learn-from https://www.youtube.com/watch?v=...
+```
+
+This fetches the transcript, description and chapters (one `yt-dlp` request, about
+ten seconds), inventories what you already have installed, and then the agent
+writes the note. It ends by printing the note's path and a summary of proposals by
+risk tier. **It installs nothing.**
+
+**4. Read the note.** It is in `~/LearningVault/Sources/` unless you configured
+otherwise. Start with *Gaps & uncertainty* — it tells you what the video showed on
+screen that the transcript could not capture. If the video had nothing installable
+in it, *Proposed actions* will say so, and that is the correct answer rather than a
+failure. Three of the [six example notes](https://github.com/Soham-1827/Self-Learning-Agent-Claude/tree/main/examples)
+propose nothing.
+
+**5. Preview the decisions.**
+
+```bash
+sla apply "<the same url>" --dry-run
+```
+
+Prints each proposal's risk tier, the exact command it would run, and the scan
+verdict — and changes nothing. Run it from a real terminal rather than through an
+agent.
+
+**6. Approve, item by item.**
+
+```bash
+sla apply "<the same url>"
+```
+
+Asks `[y/N]` per proposal. Anything other than `y` skips it. Tier `high` is never
+offered at all; its instructions are printed for you to run by hand. Each thing
+you approve is appended to the note's **Applied** section with its own undo
+command.
+
+For a whole channel, `/learn-from @handle` triages the latest uploads from metadata
+only, shows you the table, and waits for you to pick — see
+[Working through a channel](#working-through-a-channel).
 
 ## Applying proposals
 

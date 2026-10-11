@@ -6,6 +6,28 @@ number. `claude plugin update self-learning-agent` moves you between them.
 Design decisions and the reasoning behind each change live in
 [PLAN.md](PLAN.md) — the section numbers below point there.
 
+## 0.3.1 — 2026-10-10
+
+Documentation only. No code changed.
+
+### Fixed
+- **The PyPI page told visitors to install from a git URL.** A long description is
+  frozen into the release artifact, and 0.3.0 was published from the commit before
+  the README install line was switched to the published package — so the first
+  page a stranger lands on gave the wrong command. Only a new release can correct
+  a description, which is what this is.
+
+### Added
+- **"What you need"** at the top of Install, because `sla` on its own cannot write
+  a note: `sla note` consumes the agent's JSON rather than producing it. A PyPI
+  install gives you the CLI only, so fetching, triage and the approval gate work
+  and the note — the actual product — does not. That was the likeliest way for a
+  new user to conclude the tool was broken.
+- **"Your first run"** — six steps from `sla doctor` to an approved proposal,
+  stating what each one does and that nothing touches your machine until step 5.
+- `sla doctor` is now named in Install rather than only in a subsection below it,
+  since it answers "did that work" in one command.
+
 ## 0.3.0 — 2026-10-10
 
 ### Fixed
