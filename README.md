@@ -218,8 +218,8 @@ disagrees with itself — is one command:
 
 ```
 $ sla doctor
-[ok  ] cli version            0.3.0
-[ok  ] plugin version         0.3.0
+[ok  ] cli version            0.3.1
+[ok  ] plugin version         0.3.1
 [ok  ] hand-copied skill      none
 [ok  ] yt-dlp                 2026.08.19
 [ok  ] scanner                /home/you/.local/bin/skillspector (openai)
@@ -416,6 +416,15 @@ security model enforceable.
 | M5 | Channel triage + digest | ✅ |
 | M6 | Scheduled polling | |
 | M7 | Web frontend — paste any link | |
+| — | A second harness: Codex alongside Claude Code | |
+
+The three unticked rows are scoped rather than queued, and two of them are
+currently argued *against* in [PLAN.md](https://github.com/Soham-1827/Self-Learning-Agent-Claude/blob/main/PLAN.md):
+M7 because hosting would have to drop the inventory step, which is 48–68% of
+every brief and the part that makes a note specific to you (§27); and the second
+harness because it is worth doing after there are real users rather than before
+(§31). Codex turns out to be cheaper than expected — its skills are
+`<name>/SKILL.md` with the same frontmatter, so the hard part is already done.
 
 ## What it looks like on real videos
 
