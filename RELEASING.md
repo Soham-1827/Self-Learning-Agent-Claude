@@ -64,7 +64,9 @@ on TestPyPI first.
 means there is no API token in the repository or on your machine. It is inert
 until you configure the publisher, so pushing it changes nothing on its own.
 
-One-time setup at <https://pypi.org/manage/account/publishing/>:
+One-time setup at <https://pypi.org/manage/account/publishing/>. The project
+does not exist on PyPI yet, so this is the **pending publisher** form, under
+"Publishing" in the account sidebar rather than under a project:
 
 | Field | Value |
 |---|---|
@@ -74,7 +76,17 @@ One-time setup at <https://pypi.org/manage/account/publishing/>:
 | Workflow name | `release.yml` |
 | Environment name | `pypi` |
 
-Then create a GitHub environment called `pypi` in the repository settings. After
+A pending publisher becomes a normal one on the first successful publish, with
+nothing further to configure.
+
+> **It does not reserve the name.** The name is claimed on first *publication*,
+> not on creating the publisher — so if someone else registers
+> `self-learning-agent` in between, the pending publisher is invalidated and the
+> name is gone. Do not leave a configured publisher unpublished for weeks.
+
+Then create a GitHub environment called `pypi` in the repository settings — the
+workflow declares `environment: pypi` and fails without it. Adding yourself as a
+required reviewer there gives a manual approval gate before every publish. After
 that, pushing a `self-learning-agent--v*` tag publishes.
 
 ### Rehearsal on TestPyPI
