@@ -94,6 +94,30 @@ jobs:
       - run: python -m build
       - name: the metadata and the long description must be valid
         run: twine check --strict dist/*
+
+      - name: the description must tell a reader the install that works
+        # README.md is the PyPI long description and a description is frozen into
+        # the artifact — it cannot be edited on the index afterwards, only
+        # replaced by a new release. 0.3.0 shipped with the git-URL install line
+        # still in it and told every visitor the wrong command, which cost a
+        # docs-only 0.3.1. A reminder in RELEASING.md would not have caught it.
+        run: |
+          python - <<'EOF'
+          import glob
+          import zipfile
+
+          z = zipfile.ZipFile(glob.glob("dist/*.whl")[0])
+          meta = next(n for n in z.namelist() if n.endswith("METADATA"))
+          desc = z.read(meta).decode().split("\n\n", 1)[1]
+
+          assert "uv tool install self-learning-agent" in desc, (
+              "the published page would not name the package it is published as")
+          first = desc.index("## Install")
+          block = desc[first:first + 1200]
+          assert "uv tool install git+https://" not in block.split("unreleased")[0], (
+              "the install block leads with the git URL rather than the package")
+          print("description install line: ok")
+          EOF
       - name: the wheel ships the package and nothing else
         run: |
           python - <<'EOF'

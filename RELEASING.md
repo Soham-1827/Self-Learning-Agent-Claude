@@ -37,6 +37,42 @@ Add the `CHANGELOG.md` entry **before** tagging, not after. `claude plugin updat
 reports "0.2.1 → 0.2.2" and the changelog is the only way anyone learns what that
 means.
 
+### README.md must be in its post-release state before you tag
+
+`README.md` is the PyPI long description, and **a description is frozen into the
+artifact**. It cannot be edited on the index afterwards; only a new release can
+replace it. So any wording that should be true *after* this version is published
+has to be committed *before* the tag.
+
+0.3.0 was published from the commit before the install line was switched from the
+git URL to the package name, so pypi.org told every visitor to install from git.
+It cost a 0.3.1 whose only content was documentation.
+
+Check it against the artifact rather than against the repo, because they are only
+the same if you remembered:
+
+```bash
+rm -rf dist && uv build
+python - <<'EOF'
+import glob, zipfile
+z = zipfile.ZipFile(glob.glob("dist/*.whl")[0])
+meta = next(n for n in z.namelist() if n.endswith("METADATA"))
+desc = z.read(meta).decode().split("\n\n", 1)[1]
+assert "uv tool install self-learning-agent" in desc, "the page would say the wrong thing"
+print("description install line: ok")
+EOF
+```
+
+After publishing, the same read confirms what the index actually got — the JSON
+API serves the description verbatim:
+
+```bash
+curl -sS https://pypi.org/pypi/self-learning-agent/json \
+  | python3 -c "import json,sys; print('git+https' in json.load(sys.stdin)['info']['description'])"
+```
+
+`False` is the answer you want.
+
 ## The release
 
 ```bash
